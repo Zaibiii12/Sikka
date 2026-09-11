@@ -1,0 +1,27 @@
+cat > .gitignore << 'EOF'
+# Node
+node_modules/
+frontend/build/
+frontend/.env
+
+# Python
+backend/__pycache__/
+backend/*.pyc
+backend/.venv/
+backend/.env
+**/__pycache__/
+
+# Foundry
+contracts/cache/
+contracts/out/
+contracts/broadcast/
+
+# Besu network data & secrets — regenerate locally
+network/data/
+network/keys/
+network/networkFiles/
+network/.env
+
+# OS
+.DS_Store
+EOF

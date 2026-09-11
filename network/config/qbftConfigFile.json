@@ -1,0 +1,31 @@
+{
+  "genesis": {
+    "config": {
+      "chainId": 1337,
+      "berlinBlock": 0,
+      "londonBlock": 0,
+      "zeroBaseFee": true,
+      "qbft": {
+        "blockperiodseconds": 2,
+        "epochlength": 30000,
+        "requesttimeoutseconds": 4
+      }
+    },
+    "nonce": "0x0",
+    "timestamp": "0x5c51a607",
+    "gasLimit": "0x1fffffffffffff",
+    "difficulty": "0x1",
+    "coinbase": "0x0000000000000000000000000000000000000000",
+    "alloc": {
+      "f39Fd6e51aad88F6F4ce6aB8827279cffFb92266": {
+        "balance": "0x3635C9ADC5DEA00000"
+      }
+    }
+  },
+  "blockchain": {
+    "nodes": {
+      "generate": true,
+      "count": 4
+    }
+  }
+}
