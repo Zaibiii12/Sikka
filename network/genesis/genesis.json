@@ -3,6 +3,8 @@
     "chainId" : 1337,
     "berlinBlock" : 0,
     "londonBlock" : 0,
+    "shanghaiTime" : 0,
+    "cancunTime" : 0,
     "zeroBaseFee" : true,
     "qbft" : {
       "blockperiodseconds" : 2,
@@ -13,6 +15,10 @@
   "nonce" : "0x0",
   "timestamp" : "0x5c51a607",
   "gasLimit" : "0x1fffffffffffff",
+  "baseFeePerGas" : "0x0",
+  "blobGasUsed" : "0x0",
+  "excessBlobGas" : "0x0",
+  "parentBeaconBlockRoot" : "0x0000000000000000000000000000000000000000000000000000000000000000",
   "difficulty" : "0x1",
   "coinbase" : "0x0000000000000000000000000000000000000000",
   "alloc" : {
@@ -20,5 +26,5 @@
       "balance" : "0x3635C9ADC5DEA00000"
     }
   },
-  "extraData" : "0xf87aa00000000000000000000000000000000000000000000000000000000000000000f85494e85259a9202a8e7a017360e365cf5cc3ffc6713894fe4767922f70e5708e2fb3512f05f6dbe658a4cd94e6b1e82e56184d91290eaf095f57ea8658235fcf947eebbe0ba354cb1b31227c17c8573c28d4d3ec69c080c0"
+  "extraData" : "0xf87aa00000000000000000000000000000000000000000000000000000000000000000f854947007d0c23bf7fb71f84b1cb54969d4463b64fafd94760171b38352dfc640bac5542f9aa3328f38c724940c6f25fc5ae512bee5fd369bc7b8ce13e224a70694dda91df691aa17d283a00cc0b04cccffdea2bdacc080c0"
 }

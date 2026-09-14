@@ -25,3 +25,4 @@ network/.env
 # OS
 .DS_Store
 EOF
+network/.env

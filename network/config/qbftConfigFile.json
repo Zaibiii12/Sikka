@@ -4,6 +4,8 @@
       "chainId": 1337,
       "berlinBlock": 0,
       "londonBlock": 0,
+      "shanghaiTime": 0,
+      "cancunTime": 0,
       "zeroBaseFee": true,
       "qbft": {
         "blockperiodseconds": 2,
@@ -14,6 +16,10 @@
     "nonce": "0x0",
     "timestamp": "0x5c51a607",
     "gasLimit": "0x1fffffffffffff",
+    "baseFeePerGas": "0x0",
+    "blobGasUsed": "0x0",
+    "excessBlobGas": "0x0",
+    "parentBeaconBlockRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "difficulty": "0x1",
     "coinbase": "0x0000000000000000000000000000000000000000",
     "alloc": {
