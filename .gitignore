@@ -25,4 +25,6 @@ network/.env
 # OS
 .DS_Store
 EOF
-network/.env
+network/.env.pytest_cache/
+*.pyc
+.pytest_cache/
