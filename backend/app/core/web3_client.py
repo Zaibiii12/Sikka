@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 from web3 import Web3
+from web3.middleware import ExtraDataToPOAMiddleware
 
 from app.core.config import get_settings
 
@@ -11,10 +12,26 @@ def get_web3() -> Web3:
 
     provider = Web3.HTTPProvider(
         settings.rpc_url,
-        request_kwargs={"timeout": 15},
+        request_kwargs={
+            "timeout": 30,
+        },
     )
 
-    return Web3(provider)
+    w3 = Web3(provider)
+
+    # Hyperledger Besu QBFT blocks contain consensus metadata and
+    # validator signatures inside extraData. That field is therefore
+    # substantially larger than the 32-byte value expected on a normal
+    # Ethereum PoS chain.
+    #
+    # Web3.py's PoA middleware understands this block-header format and
+    # must run at layer 0 before the standard block format validators.
+    w3.middleware_onion.inject(
+        ExtraDataToPOAMiddleware,
+        layer=0,
+    )
+
+    return w3
 
 
 def require_web3() -> Web3:

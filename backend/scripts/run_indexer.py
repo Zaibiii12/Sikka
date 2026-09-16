@@ -1,0 +1,46 @@
+from __future__ import annotations
+
+import argparse
+
+from app.indexer.indexer import (
+    BlockSikkaIndexer,
+)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description=(
+            "BlockSikka blockchain "
+            "event indexer"
+        )
+    )
+
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help=(
+            "Catch up to the current "
+            "chain head and exit."
+        ),
+    )
+
+    args = parser.parse_args()
+
+    indexer = BlockSikkaIndexer()
+
+    if args.once:
+        batches = (
+            indexer.catch_up_once()
+        )
+
+        print(
+            "Catch-up complete. "
+            f"Batches processed: {batches}"
+        )
+
+    else:
+        indexer.follow()
+
+
+if __name__ == "__main__":
+    main()

@@ -34,3 +34,17 @@ def network_status() -> dict:
             status_code=503,
             detail=str(exc),
         ) from exc
+
+
+@router.get("/health/database")
+def database_health() -> dict:
+    from app.services.database import DatabaseService
+
+    try:
+        return DatabaseService().status()
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from exc

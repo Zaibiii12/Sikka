@@ -117,6 +117,28 @@ def main() -> None:
     )
 
     existing.setdefault(
+        "INDEXER_START_BLOCK",
+        "0",
+    )
+    existing.setdefault(
+        "INDEXER_BATCH_SIZE",
+        "500",
+    )
+    existing.setdefault(
+        "INDEXER_CONFIRMATIONS",
+        "0",
+    )
+    existing.setdefault(
+        "INDEXER_POLL_SECONDS",
+        "2",
+    )
+
+    existing.setdefault(
+        "DATABASE_URL",
+        "postgresql+psycopg://blocksikka:CHANGE_ME@127.0.0.1:5432/blocksikka",
+    )
+
+    existing.setdefault(
         "BANK_ADMIN_PRIVATE_KEY",
         "",
     )
@@ -169,6 +191,11 @@ def main() -> None:
         "API_PREFIX",
         "RPC_URL",
         "CHAIN_ID",
+        "INDEXER_START_BLOCK",
+        "INDEXER_BATCH_SIZE",
+        "INDEXER_CONFIRMATIONS",
+        "INDEXER_POLL_SECONDS",
+        "DATABASE_URL",
         "ACCESS_MANAGER_ADDRESS",
         "PRIVATE_USD_ADDRESS",
         "BANK_REGISTRY_ADDRESS",

@@ -2,8 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import (
+    audit,
     banks,
     health,
+    history,
+    indexer,
     payments,
     settlements,
     token,
@@ -16,9 +19,10 @@ settings = get_settings()
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.2.0",
+    version="0.3.0",
     description=(
-        "Application API for the BlockSikka permissioned "
+        "Application and indexed audit API "
+        "for the BlockSikka permissioned "
         "Besu/QBFT payment network."
     ),
 )
@@ -69,5 +73,20 @@ app.include_router(
 
 app.include_router(
     transactions.router,
+    prefix=settings.api_prefix,
+)
+
+app.include_router(
+    audit.router,
+    prefix=settings.api_prefix,
+)
+
+app.include_router(
+    history.router,
+    prefix=settings.api_prefix,
+)
+
+app.include_router(
+    indexer.router,
     prefix=settings.api_prefix,
 )

@@ -11,6 +11,17 @@ class Settings(BaseSettings):
     rpc_url: str = "http://127.0.0.1:8545"
     chain_id: int = 1337
 
+    indexer_start_block: int = 0
+    indexer_batch_size: int = 500
+    indexer_confirmations: int = 0
+    indexer_poll_seconds: float = 2.0
+
+    database_url: str = (
+        "postgresql+psycopg://"
+        "blocksikka:blocksikka_local_dev_password"
+        "@127.0.0.1:5432/blocksikka"
+    )
+
     access_manager_address: str = ""
     private_usd_address: str = ""
     bank_registry_address: str = ""
