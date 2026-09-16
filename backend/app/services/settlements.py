@@ -1,5 +1,6 @@
 from web3 import Web3
 
+from app.core.config import get_settings
 from app.core.contracts import get_contracts
 from app.core.eth import parse_bytes32
 from app.core.tx import TransactionSender
@@ -8,6 +9,7 @@ from app.core.tx import TransactionSender
 class SettlementService:
     def __init__(self) -> None:
         self.contract = get_contracts().settlement_engine
+        self.settings = get_settings()
 
     def count(self) -> int:
         return (
@@ -54,7 +56,10 @@ class SettlementService:
             for payment_id in payment_ids
         ]
 
-        return TransactionSender().send(
+        return TransactionSender(
+            self.settings.settlement_private_key,
+            "SETTLEMENT_PRIVATE_KEY",
+        ).send(
             self.contract.functions
             .createSettlementBatch(
                 batch_id_bytes,

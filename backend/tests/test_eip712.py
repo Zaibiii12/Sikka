@@ -23,7 +23,7 @@ def test_payment_eip712_structure() -> None:
 
     assert (
         typed["domain"]["name"]
-        == "PrivateBankNet-PaymentProcessor"
+        == "BlockSikka-PaymentProcessor"
     )
 
     assert typed["domain"]["version"] == "1"

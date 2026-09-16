@@ -13,5 +13,5 @@ def test_root_endpoint() -> None:
 
     body = response.json()
 
-    assert body["name"] == "Sikka API"
+    assert body["name"] == "BlockSikka API"
     assert body["docs"] == "/docs"

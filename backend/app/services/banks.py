@@ -1,3 +1,4 @@
+from app.core.config import get_settings
 from app.core.contracts import get_contracts
 from app.core.eth import checksum_address
 from app.core.tx import TransactionSender
@@ -6,6 +7,7 @@ from app.core.tx import TransactionSender
 class BankService:
     def __init__(self) -> None:
         self.contract = get_contracts().bank_registry
+        self.settings = get_settings()
 
     def get_bank(self, address: str) -> dict:
         address = checksum_address(address)
@@ -39,6 +41,12 @@ class BankService:
 
         return banks
 
+    def _admin_sender(self) -> TransactionSender:
+        return TransactionSender(
+            self.settings.bank_admin_private_key,
+            "BANK_ADMIN_PRIVATE_KEY",
+        )
+
     def register(
         self,
         address: str,
@@ -46,9 +54,7 @@ class BankService:
     ) -> dict:
         address = checksum_address(address)
 
-        sender = TransactionSender()
-
-        return sender.send(
+        return self._admin_sender().send(
             self.contract.functions.registerBank(
                 address,
                 name,
@@ -58,13 +64,13 @@ class BankService:
     def deactivate(self, address: str) -> dict:
         address = checksum_address(address)
 
-        return TransactionSender().send(
+        return self._admin_sender().send(
             self.contract.functions.deactivateBank(address)
         )
 
     def reactivate(self, address: str) -> dict:
         address = checksum_address(address)
 
-        return TransactionSender().send(
+        return self._admin_sender().send(
             self.contract.functions.reactivateBank(address)
         )

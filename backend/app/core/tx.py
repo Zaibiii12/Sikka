@@ -10,19 +10,20 @@ from app.core.web3_client import require_web3
 
 
 class TransactionSender:
-    def __init__(self) -> None:
-        self.settings = get_settings()
-
-        if not self.settings.dev_operator_private_key:
+    def __init__(
+        self,
+        private_key: str,
+        key_name: str = "private key",
+    ) -> None:
+        if not private_key:
             raise RuntimeError(
-                "DEV_OPERATOR_PRIVATE_KEY is not configured. "
-                "Write transactions are disabled."
+                f"{key_name} is not configured. "
+                "This write operation is disabled."
             )
 
+        self.settings = get_settings()
         self.w3 = require_web3()
-        self.account = Account.from_key(
-            self.settings.dev_operator_private_key
-        )
+        self.account = Account.from_key(private_key)
 
     def send(
         self,
@@ -52,17 +53,29 @@ class TransactionSender:
                 "nonce": nonce,
                 "chainId": self.settings.chain_id,
                 "gas": gas_limit,
-                # Your current Besu genesis uses zeroBaseFee.
                 "gasPrice": 0,
             }
         )
 
         signed = self.account.sign_transaction(tx)
 
-        if hasattr(signed, "raw_transaction"):
-            raw_transaction = signed.raw_transaction
-        else:
-            raw_transaction = signed.rawTransaction
+        raw_transaction = getattr(
+            signed,
+            "raw_transaction",
+            None,
+        )
+
+        if raw_transaction is None:
+            raw_transaction = getattr(
+                signed,
+                "rawTransaction",
+                None,
+            )
+
+        if raw_transaction is None:
+            raise RuntimeError(
+                "Unable to obtain signed raw transaction"
+            )
 
         tx_hash = self.w3.eth.send_raw_transaction(
             raw_transaction
@@ -73,6 +86,7 @@ class TransactionSender:
         if not wait:
             return {
                 "transaction_hash": tx_hash_hex,
+                "sender": sender,
                 "status": "submitted",
             }
 
@@ -84,6 +98,7 @@ class TransactionSender:
 
         return {
             "transaction_hash": tx_hash_hex,
+            "sender": sender,
             "block_number": receipt["blockNumber"],
             "gas_used": receipt["gasUsed"],
             "status": (

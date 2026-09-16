@@ -1,5 +1,7 @@
 from typing import Any
 
+from app.core.eth import bytes32_hex, parse_bytes32
+
 
 def build_payment_typed_data(
     *,
@@ -12,29 +14,62 @@ def build_payment_typed_data(
     expiry: int,
     payment_id: str,
 ) -> dict[str, Any]:
+    # Always canonicalize bytes32 values to Ethereum's 0x-prefixed
+    # hexadecimal representation before passing them to eth-account.
+    canonical_payment_id = bytes32_hex(
+        parse_bytes32(payment_id)
+    )
+
     return {
         "types": {
             "EIP712Domain": [
-                {"name": "name", "type": "string"},
-                {"name": "version", "type": "string"},
-                {"name": "chainId", "type": "uint256"},
+                {
+                    "name": "name",
+                    "type": "string",
+                },
+                {
+                    "name": "version",
+                    "type": "string",
+                },
+                {
+                    "name": "chainId",
+                    "type": "uint256",
+                },
                 {
                     "name": "verifyingContract",
                     "type": "address",
                 },
             ],
             "PaymentOrder": [
-                {"name": "from", "type": "address"},
-                {"name": "to", "type": "address"},
-                {"name": "amount", "type": "uint256"},
-                {"name": "nonce", "type": "uint256"},
-                {"name": "expiry", "type": "uint256"},
-                {"name": "paymentId", "type": "bytes32"},
+                {
+                    "name": "from",
+                    "type": "address",
+                },
+                {
+                    "name": "to",
+                    "type": "address",
+                },
+                {
+                    "name": "amount",
+                    "type": "uint256",
+                },
+                {
+                    "name": "nonce",
+                    "type": "uint256",
+                },
+                {
+                    "name": "expiry",
+                    "type": "uint256",
+                },
+                {
+                    "name": "paymentId",
+                    "type": "bytes32",
+                },
             ],
         },
         "primaryType": "PaymentOrder",
         "domain": {
-            "name": "PrivateBankNet-PaymentProcessor",
+            "name": "BlockSikka-PaymentProcessor",
             "version": "1",
             "chainId": chain_id,
             "verifyingContract": verifying_contract,
@@ -45,6 +80,6 @@ def build_payment_typed_data(
             "amount": amount,
             "nonce": nonce,
             "expiry": expiry,
-            "paymentId": payment_id,
+            "paymentId": canonical_payment_id,
         },
     }

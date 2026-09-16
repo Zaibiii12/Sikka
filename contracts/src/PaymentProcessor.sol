@@ -10,7 +10,7 @@ import {BankRegistry} from "./BankRegistry.sol";
 import {PrivateUSD} from "./PrivateUSD.sol";
 
 /// @title PaymentProcessor
-/// @notice Accepts EIP-712-signed PaymentOrders and moves pUSD from payer to
+/// @notice Accepts EIP-712-signed PaymentOrders and moves SIKKA from payer to
 ///         payee via PrivateUSD's standard ERC20 allowance mechanism (the
 ///         payer must have approved this contract as a spender beforehand,
 ///         separately from signing the order itself). Both parties must be
@@ -81,7 +81,7 @@ contract PaymentProcessor is EIP712, ReentrancyGuard, Pausable {
     }
 
     constructor(address accessManagerAddress, address bankRegistryAddress, address privateUSDAddress)
-        EIP712("PrivateBankNet-PaymentProcessor", "1")
+        EIP712("BlockSikka-PaymentProcessor", "1")
     {
         if (accessManagerAddress == address(0)) revert ZeroAddress();
         if (bankRegistryAddress == address(0)) revert ZeroAddress();

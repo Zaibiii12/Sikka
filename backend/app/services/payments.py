@@ -2,6 +2,7 @@ from app.core.config import get_settings
 from app.core.contracts import get_contracts
 from app.core.eip712 import build_payment_typed_data
 from app.core.eth import (
+    bytes32_hex,
     checksum_address,
     parse_bytes32,
     parse_hex_bytes,
@@ -15,9 +16,15 @@ from app.models.payment import (
 
 class PaymentService:
     def __init__(self) -> None:
-        self.contract = get_contracts().payment_processor
+        self.contract = (
+            get_contracts().payment_processor
+        )
+        self.settings = get_settings()
 
-    def nonce(self, address: str) -> int:
+    def nonce(
+        self,
+        address: str,
+    ) -> int:
         address = checksum_address(address)
 
         return (
@@ -26,8 +33,13 @@ class PaymentService:
             .call()
         )
 
-    def is_processed(self, payment_id: str) -> bool:
-        payment_id_bytes = parse_bytes32(payment_id)
+    def is_processed(
+        self,
+        payment_id: str,
+    ) -> bool:
+        payment_id_bytes = parse_bytes32(
+            payment_id
+        )
 
         return (
             self.contract.functions
@@ -39,32 +51,38 @@ class PaymentService:
         self,
         request: PreparePaymentRequest,
     ) -> dict:
-        settings = get_settings()
-
         from_address = checksum_address(
             request.from_address
         )
+
         to_address = checksum_address(
             request.to_address
         )
 
-        # Validate bytes32 now, before handing anything
-        # to a wallet.
-        parse_bytes32(request.payment_id)
+        # Validate and normalize to a canonical 0x-prefixed
+        # bytes32 value.
+        payment_id = bytes32_hex(
+            parse_bytes32(
+                request.payment_id
+            )
+        )
 
-        nonce = self.nonce(from_address)
+        nonce = self.nonce(
+            from_address
+        )
 
         typed_data = build_payment_typed_data(
-            chain_id=settings.chain_id,
+            chain_id=self.settings.chain_id,
             verifying_contract=checksum_address(
-                settings.payment_processor_address
+                self.settings
+                .payment_processor_address
             ),
             from_address=from_address,
             to_address=to_address,
             amount=request.amount,
             nonce=nonce,
             expiry=request.expiry,
-            payment_id=request.payment_id,
+            payment_id=payment_id,
         )
 
         return {
@@ -74,7 +92,7 @@ class PaymentService:
                 "amount": request.amount,
                 "nonce": nonce,
                 "expiry": request.expiry,
-                "payment_id": request.payment_id,
+                "payment_id": payment_id,
             },
             "typed_data": typed_data,
         }
@@ -87,6 +105,7 @@ class PaymentService:
         from_address = checksum_address(
             order.from_address
         )
+
         to_address = checksum_address(
             order.to_address
         )
@@ -95,11 +114,14 @@ class PaymentService:
             order.payment_id
         )
 
-        signature_bytes = parse_hex_bytes(signature)
+        signature_bytes = parse_hex_bytes(
+            signature
+        )
 
         if len(signature_bytes) != 65:
             raise ValueError(
-                "Expected a standard 65-byte ECDSA signature"
+                "Expected a standard "
+                "65-byte ECDSA signature"
             )
 
         order_tuple = (
@@ -119,7 +141,10 @@ class PaymentService:
             )
         )
 
-        return TransactionSender().send(
+        return TransactionSender(
+            self.settings.relayer_private_key,
+            "RELAYER_PRIVATE_KEY",
+        ).send(
             function,
             wait=False,
         )

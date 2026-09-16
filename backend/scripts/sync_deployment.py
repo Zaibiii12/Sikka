@@ -33,10 +33,16 @@ def read_existing_env() -> dict[str, str]:
     if not ENV_FILE.exists():
         return values
 
-    for raw_line in ENV_FILE.read_text(encoding="utf-8").splitlines():
+    for raw_line in ENV_FILE.read_text(
+        encoding="utf-8"
+    ).splitlines():
         line = raw_line.strip()
 
-        if not line or line.startswith("#") or "=" not in line:
+        if (
+            not line
+            or line.startswith("#")
+            or "=" not in line
+        ):
             continue
 
         key, value = line.split("=", 1)
@@ -48,25 +54,37 @@ def read_existing_env() -> dict[str, str]:
 def main() -> None:
     if not BROADCAST_FILE.exists():
         raise FileNotFoundError(
-            f"Deployment broadcast not found:\n{BROADCAST_FILE}\n"
+            f"Deployment broadcast not found:\n"
+            f"{BROADCAST_FILE}\n"
             "Deploy the contracts first."
         )
 
-    data = json.loads(BROADCAST_FILE.read_text(encoding="utf-8"))
+    data = json.loads(
+        BROADCAST_FILE.read_text(
+            encoding="utf-8"
+        )
+    )
 
     addresses: dict[str, str] = {}
 
     for tx in data.get("transactions", []):
         contract_name = tx.get("contractName")
-        contract_address = tx.get("contractAddress")
+        contract_address = tx.get(
+            "contractAddress"
+        )
 
-        if contract_name in CONTRACT_ENV_KEYS and contract_address:
-            addresses[contract_name] = contract_address
+        if (
+            contract_name in CONTRACT_ENV_KEYS
+            and contract_address
+        ):
+            addresses[contract_name] = (
+                contract_address
+            )
 
     missing = [
-        contract_name
-        for contract_name in CONTRACT_ENV_KEYS
-        if contract_name not in addresses
+        name
+        for name in CONTRACT_ENV_KEYS
+        if name not in addresses
     ]
 
     if missing:
@@ -77,21 +95,73 @@ def main() -> None:
 
     existing = read_existing_env()
 
-    existing.setdefault("APP_NAME", "Sikka API")
-    existing.setdefault("APP_ENV", "development")
-    existing.setdefault("API_PREFIX", "/api/v1")
-    existing.setdefault("RPC_URL", "http://127.0.0.1:8545")
-    existing.setdefault("CHAIN_ID", "1337")
     existing.setdefault(
-        "CORS_ORIGINS",
-        "http://localhost:5173,http://127.0.0.1:5173",
+        "APP_NAME",
+        "Sikka API",
+    )
+    existing.setdefault(
+        "APP_ENV",
+        "development",
+    )
+    existing.setdefault(
+        "API_PREFIX",
+        "/api/v1",
+    )
+    existing.setdefault(
+        "RPC_URL",
+        "http://127.0.0.1:8545",
+    )
+    existing.setdefault(
+        "CHAIN_ID",
+        "1337",
     )
 
-    # Preserve a private key if the developer already added one.
-    existing.setdefault("DEV_OPERATOR_PRIVATE_KEY", "")
+    existing.setdefault(
+        "BANK_ADMIN_PRIVATE_KEY",
+        "",
+    )
+    existing.setdefault(
+        "MINTER_PRIVATE_KEY",
+        "",
+    )
+    existing.setdefault(
+        "BURNER_PRIVATE_KEY",
+        "",
+    )
+    existing.setdefault(
+        "FREEZER_PRIVATE_KEY",
+        "",
+    )
+    existing.setdefault(
+        "PAUSER_PRIVATE_KEY",
+        "",
+    )
+    existing.setdefault(
+        "SETTLEMENT_PRIVATE_KEY",
+        "",
+    )
+    existing.setdefault(
+        "RELAYER_PRIVATE_KEY",
+        "",
+    )
 
-    for contract_name, env_key in CONTRACT_ENV_KEYS.items():
-        existing[env_key] = addresses[contract_name]
+    existing.setdefault(
+        "CORS_ORIGINS",
+        "http://localhost:5173,"
+        "http://127.0.0.1:5173",
+    )
+
+    existing.pop(
+        "DEV_OPERATOR_PRIVATE_KEY",
+        None,
+    )
+
+    for contract_name, env_key in (
+        CONTRACT_ENV_KEYS.items()
+    ):
+        existing[env_key] = addresses[
+            contract_name
+        ]
 
     order = [
         "APP_NAME",
@@ -105,18 +175,35 @@ def main() -> None:
         "PAYMENT_PROCESSOR_ADDRESS",
         "SETTLEMENT_ENGINE_ADDRESS",
         "GOVERNANCE_ADDRESS",
-        "DEV_OPERATOR_PRIVATE_KEY",
+        "BANK_ADMIN_PRIVATE_KEY",
+        "MINTER_PRIVATE_KEY",
+        "BURNER_PRIVATE_KEY",
+        "FREEZER_PRIVATE_KEY",
+        "PAUSER_PRIVATE_KEY",
+        "SETTLEMENT_PRIVATE_KEY",
+        "RELAYER_PRIVATE_KEY",
         "CORS_ORIGINS",
     ]
 
-    lines = [f"{key}={existing.get(key, '')}" for key in order]
-    ENV_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    lines = [
+        f"{key}={existing.get(key, '')}"
+        for key in order
+    ]
+
+    ENV_FILE.write_text(
+        "\n".join(lines) + "\n",
+        encoding="utf-8",
+    )
 
     print(f"Updated {ENV_FILE}")
+
     print()
     print("Deployment:")
+
     for name, key in CONTRACT_ENV_KEYS.items():
-        print(f"{name:22} {existing[key]}")
+        print(
+            f"{name:22} {existing[key]}"
+        )
 
 
 if __name__ == "__main__":

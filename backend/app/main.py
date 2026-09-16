@@ -7,6 +7,7 @@ from app.api import (
     payments,
     settlements,
     token,
+    transactions,
 )
 from app.core.config import get_settings
 
@@ -15,9 +16,9 @@ settings = get_settings()
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.1.0",
+    version="0.2.0",
     description=(
-        "Application API for the Sikka permissioned "
+        "Application API for the BlockSikka permissioned "
         "Besu/QBFT payment network."
     ),
 )
@@ -63,5 +64,10 @@ app.include_router(
 
 app.include_router(
     settlements.router,
+    prefix=settings.api_prefix,
+)
+
+app.include_router(
+    transactions.router,
     prefix=settings.api_prefix,
 )

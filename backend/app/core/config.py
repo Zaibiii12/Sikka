@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "Sikka API"
+    app_name: str = "BlockSikka API"
     app_env: str = "development"
     api_prefix: str = "/api/v1"
 
@@ -18,7 +18,13 @@ class Settings(BaseSettings):
     settlement_engine_address: str = ""
     governance_address: str = ""
 
-    dev_operator_private_key: str = ""
+    bank_admin_private_key: str = ""
+    minter_private_key: str = ""
+    burner_private_key: str = ""
+    freezer_private_key: str = ""
+    pauser_private_key: str = ""
+    settlement_private_key: str = ""
+    relayer_private_key: str = ""
 
     cors_origins: str = (
         "http://localhost:5173,"

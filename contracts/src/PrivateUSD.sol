@@ -5,7 +5,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {AccessManager} from "./AccessManager.sol";
 
-/// @title PrivateUSD (pUSD)
+/// @title PrivateUSD (SIKKA)
 /// @notice Educational permissioned stablecoin for PrivateBankNet. Mint/burn
 ///         are restricted to addresses holding MINTER_ROLE/BURNER_ROLE on the
 ///         shared AccessManager. Individual accounts can be frozen without
@@ -54,7 +54,7 @@ contract PrivateUSD is ERC20, Pausable {
 
     /// @param accessManagerAddress Address of the already-deployed
     ///        AccessManager this token defers all permission checks to.
-    constructor(address accessManagerAddress) ERC20("Private USD", "pUSD") {
+    constructor(address accessManagerAddress) ERC20("Sikka", "SIKKA") {
         if (accessManagerAddress == address(0)) revert ZeroAddress();
         accessManager = AccessManager(accessManagerAddress);
     }
@@ -65,7 +65,7 @@ contract PrivateUSD is ERC20, Pausable {
         return 6;
     }
 
-    /// @notice Mint new pUSD to `to`. Restricted to MINTER_ROLE. Represents,
+    /// @notice Mint new SIKKA to `to`. Restricted to MINTER_ROLE. Represents,
     ///         e.g., a registered bank crediting a customer after an
     ///         off-chain fiat deposit is confirmed.
     function mint(address to, uint256 amount)
@@ -80,7 +80,7 @@ contract PrivateUSD is ERC20, Pausable {
         emit Mint(to, amount, msg.sender);
     }
 
-    /// @notice Burn pUSD from `from`. Restricted to BURNER_ROLE. Represents,
+    /// @notice Burn SIKKA from `from`. Restricted to BURNER_ROLE. Represents,
     ///         e.g., a redemption back to fiat.
     function burn(address from, uint256 amount)
         external

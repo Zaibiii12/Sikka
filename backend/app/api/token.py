@@ -30,6 +30,24 @@ def balance(address: str) -> dict:
         ) from exc
 
 
+@router.get("/allowance/{owner}/{spender}")
+def allowance(
+    owner: str,
+    spender: str,
+) -> dict:
+    try:
+        return TokenService().allowance(
+            owner,
+            spender,
+        )
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+
 @router.post("/admin/mint")
 def mint(
     request: TokenAccountAmountRequest,
