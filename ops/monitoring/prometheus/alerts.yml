@@ -1,0 +1,211 @@
+groups:
+
+  - name: blocksikka-network
+    interval: 5s
+
+    rules:
+
+      - alert: BlockSikkaValidatorDown
+
+        expr: |
+          up{
+            network="blocksikka",
+            job=~"besu-validator[1-4]"
+          } == 0
+
+        for: 15s
+
+        labels:
+          severity: critical
+          component: besu
+
+        annotations:
+          summary: "BlockSikka validator is down"
+          description: "Validator {{ $labels.validator }} is not reachable by Prometheus."
+
+
+      - alert: BlockSikkaPeerCountDegraded
+
+        expr: |
+          sum by (validator) (
+            besu_peers_peer_count_by_client{
+              network="blocksikka"
+            }
+          ) < 3
+
+        for: 30s
+
+        labels:
+          severity: warning
+          component: besu
+
+        annotations:
+          summary: "BlockSikka validator peer count degraded"
+          description: "Validator {{ $labels.validator }} has fewer than 3 connected peers."
+
+
+      - alert: BlockSikkaBlockProductionStalled
+
+        expr: |
+          time()
+          -
+          besu_blockchain_chain_head_timestamp{
+            network="blocksikka"
+          }
+          > 15
+
+        for: 15s
+
+        labels:
+          severity: critical
+          component: consensus
+
+        annotations:
+          summary: "BlockSikka block production appears stalled"
+          description: "Validator {{ $labels.validator }} has not observed a fresh chain head for more than 15 seconds."
+
+
+  - name: blocksikka-application
+    interval: 5s
+
+    rules:
+
+      - alert: BlockSikkaFastAPIDown
+
+        expr: |
+          up{
+            job="blocksikka-api"
+          } == 0
+
+        for: 15s
+
+        labels:
+          severity: critical
+          component: fastapi
+
+        annotations:
+          summary: "BlockSikka FastAPI is down"
+          description: "Prometheus cannot scrape the BlockSikka FastAPI metrics endpoint."
+
+
+      - alert: BlockSikkaFastAPIHigh5xxRate
+
+        expr: |
+          sum(
+            rate(
+              blocksikka_http_requests_total{
+                status=~"5.."
+              }[2m]
+            )
+          )
+          > 0.05
+
+        for: 1m
+
+        labels:
+          severity: warning
+          component: fastapi
+
+        annotations:
+          summary: "BlockSikka FastAPI is returning server errors"
+          description: "HTTP 5xx response rate has exceeded the configured threshold."
+
+
+  - name: blocksikka-indexer
+    interval: 5s
+
+    rules:
+
+      - alert: BlockSikkaIndexerDown
+
+        expr: |
+          up{
+            job="blocksikka-indexer"
+          } == 0
+
+        for: 15s
+
+        labels:
+          severity: critical
+          component: indexer
+
+        annotations:
+          summary: "BlockSikka indexer is down"
+          description: "Prometheus cannot scrape the BlockSikka indexer metrics endpoint."
+
+
+      - alert: BlockSikkaIndexerLagHigh
+
+        expr: |
+          blocksikka_indexer_lag_blocks
+          > 10
+
+        for: 30s
+
+        labels:
+          severity: warning
+          component: indexer
+
+        annotations:
+          summary: "BlockSikka indexer is falling behind"
+          description: "Indexer lag has remained above 10 blocks for at least 30 seconds."
+
+
+      - alert: BlockSikkaIndexerStale
+
+        expr: |
+          time()
+          -
+          blocksikka_indexer_last_success_timestamp_seconds
+          > 30
+
+        for: 30s
+
+        labels:
+          severity: critical
+          component: indexer
+
+        annotations:
+          summary: "BlockSikka indexer has stopped making progress"
+          description: "The indexer has not reported a successful polling cycle for more than 30 seconds."
+
+
+  - name: blocksikka-database
+    interval: 5s
+
+    rules:
+
+      - alert: BlockSikkaPostgresExporterDown
+
+        expr: |
+          up{
+            job="blocksikka-postgres"
+          } == 0
+
+        for: 15s
+
+        labels:
+          severity: warning
+          component: postgresql
+
+        annotations:
+          summary: "BlockSikka PostgreSQL exporter is down"
+          description: "Prometheus cannot scrape postgres_exporter."
+
+
+      - alert: BlockSikkaPostgresDown
+
+        expr: |
+          pg_up{
+            job="blocksikka-postgres"
+          } == 0
+
+        for: 15s
+
+        labels:
+          severity: critical
+          component: postgresql
+
+        annotations:
+          summary: "BlockSikka PostgreSQL is unavailable"
+          description: "postgres_exporter cannot connect to the BlockSikka PostgreSQL database."

@@ -30,3 +30,5 @@ network/.env.pytest_cache/
 .pytest_cache/
 backend/dev-keys/
 backend/.env.db
+ops/monitoring/.env
+ops/monitoring/.postgres-exporter.env

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+import traceback
 from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
@@ -27,6 +28,19 @@ from app.indexer.processor import (
 from app.indexer.utils import (
     utc_datetime,
 )
+from app.observability.indexer_metrics import (
+    INDEXER_BATCHES_PROCESSED,
+    INDEXER_CAUGHT_UP,
+    INDEXER_CHAIN_HEAD,
+    INDEXER_ERRORS,
+    INDEXER_EVENTS_PROCESSED,
+    INDEXER_LAST_ERROR_TIMESTAMP,
+    INDEXER_LAST_INDEXED_BLOCK,
+    INDEXER_LAST_SUCCESS_TIMESTAMP,
+    INDEXER_LAG_BLOCKS,
+    INDEXER_LOGS_SEEN,
+    INDEXER_TARGET_BLOCK,
+)
 
 
 STATE_KEY = "blocksikka-main"
@@ -41,7 +55,9 @@ class BatchResult:
 
 
 class BlockSikkaIndexer:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+    ) -> None:
         self.settings = (
             get_settings()
         )
@@ -56,17 +72,31 @@ class BlockSikkaIndexer:
             EventProcessor()
         )
 
-    def _target_block(self) -> int:
+
+    def _target_block(
+        self,
+    ) -> int:
         latest = (
             self.w3.eth.block_number
         )
 
-        return max(
+        target = max(
             0,
             latest
             - self.settings
             .indexer_confirmations,
         )
+
+        INDEXER_CHAIN_HEAD.set(
+            latest
+        )
+
+        INDEXER_TARGET_BLOCK.set(
+            target
+        )
+
+        return target
+
 
     def _load_state(
         self,
@@ -76,6 +106,7 @@ class BlockSikkaIndexer:
             IndexerState,
             STATE_KEY,
         )
+
 
     def _verify_checkpoint(
         self,
@@ -111,7 +142,10 @@ class BlockSikkaIndexer:
                 "Possible chain reset/reorg."
             )
 
-    def next_block(self) -> int:
+
+    def next_block(
+        self,
+    ) -> int:
         with SessionLocal() as session:
             state = (
                 self._load_state(
@@ -129,9 +163,14 @@ class BlockSikkaIndexer:
                 state
             )
 
+            INDEXER_LAST_INDEXED_BLOCK.set(
+                state.last_block
+            )
+
             return (
                 state.last_block + 1
             )
+
 
     def process_batch(
         self,
@@ -140,12 +179,15 @@ class BlockSikkaIndexer:
     ) -> BatchResult:
         logs = self.w3.eth.get_logs(
             {
-                "fromBlock": from_block,
-                "toBlock": to_block,
-                "address": (
+                "fromBlock":
+                    from_block,
+
+                "toBlock":
+                    to_block,
+
+                "address":
                     self.registry
-                    .addresses
-                ),
+                    .addresses,
             }
         )
 
@@ -174,7 +216,8 @@ class BlockSikkaIndexer:
                 )
 
                 expected = (
-                    state.last_block + 1
+                    state.last_block
+                    + 1
                 )
 
                 if (
@@ -254,8 +297,12 @@ class BlockSikkaIndexer:
                 )
             )
 
-            final_hash = Web3.to_hex(
-                final_block["hash"]
+            final_hash = (
+                Web3.to_hex(
+                    final_block[
+                        "hash"
+                    ]
+                )
             )
 
             if state is None:
@@ -267,7 +314,9 @@ class BlockSikkaIndexer:
                     ),
                 )
 
-                session.add(state)
+                session.add(
+                    state
+                )
 
             else:
                 state.last_block = (
@@ -278,10 +327,27 @@ class BlockSikkaIndexer:
                     final_hash
                 )
 
-            # Event writes and checkpoint are
-            # committed together. If anything
-            # fails above, neither survives.
+            # Event writes and checkpoint
+            # commit together.
             session.commit()
+
+        INDEXER_BATCHES_PROCESSED.inc()
+
+        INDEXER_LOGS_SEEN.inc(
+            len(logs)
+        )
+
+        INDEXER_EVENTS_PROCESSED.inc(
+            decoded_count
+        )
+
+        INDEXER_LAST_INDEXED_BLOCK.set(
+            to_block
+        )
+
+        INDEXER_LAST_SUCCESS_TIMESTAMP.set(
+            time.time()
+        )
 
         return BatchResult(
             from_block=from_block,
@@ -292,7 +358,10 @@ class BlockSikkaIndexer:
             ),
         )
 
-    def catch_up_once(self) -> int:
+
+    def catch_up_once(
+        self,
+    ) -> int:
         next_block = (
             self.next_block()
         )
@@ -301,12 +370,47 @@ class BlockSikkaIndexer:
             self._target_block()
         )
 
-        if next_block > target:
+        last_indexed = max(
+            0,
+            next_block - 1,
+        )
+
+        INDEXER_LAST_INDEXED_BLOCK.set(
+            last_indexed
+        )
+
+        INDEXER_LAG_BLOCKS.set(
+            max(
+                0,
+                target
+                - last_indexed,
+            )
+        )
+
+        if (
+            next_block
+            > target
+        ):
+            INDEXER_CAUGHT_UP.set(
+                1
+            )
+
+            INDEXER_LAST_SUCCESS_TIMESTAMP.set(
+                time.time()
+            )
+
             return 0
+
+        INDEXER_CAUGHT_UP.set(
+            0
+        )
 
         batches = 0
 
-        while next_block <= target:
+        while (
+            next_block
+            <= target
+        ):
             end_block = min(
                 next_block
                 + self.settings
@@ -332,11 +436,33 @@ class BlockSikkaIndexer:
             )
 
             batches += 1
-            next_block = end_block + 1
+
+            next_block = (
+                end_block + 1
+            )
+
+            INDEXER_LAG_BLOCKS.set(
+                max(
+                    0,
+                    target
+                    - result.to_block,
+                )
+            )
+
+        INDEXER_CAUGHT_UP.set(
+            1
+        )
+
+        INDEXER_LAST_SUCCESS_TIMESTAMP.set(
+            time.time()
+        )
 
         return batches
 
-    def follow(self) -> None:
+
+    def follow(
+        self,
+    ) -> None:
         print(
             "BlockSikka indexer started"
         )
@@ -363,7 +489,9 @@ class BlockSikkaIndexer:
                     self.catch_up_once()
                 )
 
-                if batches == 0:
+                if (
+                    batches == 0
+                ):
                     time.sleep(
                         self.settings
                         .indexer_poll_seconds
@@ -373,4 +501,24 @@ class BlockSikkaIndexer:
                 print(
                     "\nIndexer stopped."
                 )
+
                 return
+
+            except Exception as exc:
+                INDEXER_ERRORS.inc()
+
+                INDEXER_LAST_ERROR_TIMESTAMP.set(
+                    time.time()
+                )
+
+                print(
+                    "[indexer] ERROR:",
+                    exc,
+                )
+
+                traceback.print_exc()
+
+                time.sleep(
+                    self.settings
+                    .indexer_poll_seconds
+                )

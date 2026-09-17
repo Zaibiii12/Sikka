@@ -5,6 +5,9 @@ import argparse
 from app.indexer.indexer import (
     BlockSikkaIndexer,
 )
+from app.observability.indexer_metrics import (
+    start_indexer_metrics_server,
+)
 
 
 def main() -> None:
@@ -39,6 +42,19 @@ def main() -> None:
         )
 
     else:
+        start_indexer_metrics_server(
+            host="0.0.0.0",
+            port=9101,
+        )
+
+        print(
+            "Indexer Prometheus metrics:"
+        )
+
+        print(
+            "  http://127.0.0.1:9101/metrics"
+        )
+
         indexer.follow()
 
 

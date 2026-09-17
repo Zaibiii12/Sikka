@@ -1,0 +1,97 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+rule_files:
+  - "/etc/prometheus/alerts.yml"
+
+scrape_configs:
+
+  - job_name: "prometheus"
+
+    static_configs:
+      - targets:
+          - "localhost:9090"
+
+
+  - job_name: "besu-validator1"
+
+    static_configs:
+      - targets:
+          - "host.docker.internal:9545"
+
+        labels:
+          validator: "validator1"
+          network: "blocksikka"
+
+
+  - job_name: "besu-validator2"
+
+    static_configs:
+      - targets:
+          - "host.docker.internal:9546"
+
+        labels:
+          validator: "validator2"
+          network: "blocksikka"
+
+
+  - job_name: "besu-validator3"
+
+    static_configs:
+      - targets:
+          - "host.docker.internal:9547"
+
+        labels:
+          validator: "validator3"
+          network: "blocksikka"
+
+
+  - job_name: "besu-validator4"
+
+    static_configs:
+      - targets:
+          - "host.docker.internal:9548"
+
+        labels:
+          validator: "validator4"
+          network: "blocksikka"
+
+
+  - job_name: "blocksikka-api"
+
+    metrics_path: "/metrics"
+
+    static_configs:
+      - targets:
+          - "host.docker.internal:8000"
+
+        labels:
+          service: "fastapi"
+          network: "blocksikka"
+
+
+  - job_name: "blocksikka-indexer"
+
+    metrics_path: "/metrics"
+
+    static_configs:
+      - targets:
+          - "host.docker.internal:9101"
+
+        labels:
+          service: "indexer"
+          network: "blocksikka"
+
+
+  - job_name: "blocksikka-postgres"
+
+    metrics_path: "/metrics"
+
+    static_configs:
+      - targets:
+          - "postgres-exporter:9187"
+
+        labels:
+          service: "postgresql"
+          network: "blocksikka"

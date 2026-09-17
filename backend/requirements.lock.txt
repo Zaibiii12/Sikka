@@ -35,6 +35,7 @@ multidict==6.8.0
 packaging==26.3
 parsimonious==0.10.0
 pluggy==1.6.0
+prometheus_client==0.26.0
 propcache==0.5.2
 psycopg==3.3.5
 psycopg-binary==3.3.5

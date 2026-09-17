@@ -14,63 +14,69 @@ from app.api import (
     transactions,
 )
 from app.core.config import get_settings
+from app.observability.metrics import install_metrics
 
 
 settings = get_settings()
 
 
 app = FastAPI(
-    title=settings.app_name,
-    version="0.4.0",
+    title="BlockSikka API",
     description=(
-        "Application, payment, settlement, and indexed audit API "
-        "for the BlockSikka permissioned Besu/QBFT network."
+        "Backend API for the BlockSikka permissioned "
+        "payment and settlement network."
     ),
+    version="0.5.0",
 )
 
 
+# ---------------------------------------------------------
+# CORS
+# ---------------------------------------------------------
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origin_list,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-@app.get("/")
-def root() -> dict:
+# ---------------------------------------------------------
+# Root endpoint
+# ---------------------------------------------------------
+
+@app.get(
+    "/",
+    tags=["system"],
+)
+async def root():
     return {
-        "name": settings.app_name,
-        "environment": settings.app_env,
+        "name": "BlockSikka API",
+        "service": "BlockSikka API",
+        "status": "ok",
+        "version": "0.5.0",
         "docs": "/docs",
-        "api_prefix": settings.api_prefix,
     }
 
 
-# ---------------------------------------------------------------------
-# Health / infrastructure
-# ---------------------------------------------------------------------
+# ---------------------------------------------------------
+# API routers
+# ---------------------------------------------------------
 
 app.include_router(
     health.router,
     prefix=settings.api_prefix,
 )
 
-
-# ---------------------------------------------------------------------
-# Public frontend configuration
-# ---------------------------------------------------------------------
-
 app.include_router(
     public_config.router,
     prefix=settings.api_prefix,
 )
-
-
-# ---------------------------------------------------------------------
-# Core blockchain application APIs
-# ---------------------------------------------------------------------
 
 app.include_router(
     banks.router,
@@ -97,11 +103,6 @@ app.include_router(
     prefix=settings.api_prefix,
 )
 
-
-# ---------------------------------------------------------------------
-# PostgreSQL-backed audit / history APIs
-# ---------------------------------------------------------------------
-
 app.include_router(
     audit.router,
     prefix=settings.api_prefix,
@@ -115,4 +116,21 @@ app.include_router(
 app.include_router(
     indexer.router,
     prefix=settings.api_prefix,
+)
+
+
+# ---------------------------------------------------------
+# Prometheus instrumentation
+#
+# Exposes:
+#   GET /metrics
+#
+# Metrics:
+#   blocksikka_http_requests_total
+#   blocksikka_http_request_duration_seconds
+#   blocksikka_http_requests_in_progress
+# ---------------------------------------------------------
+
+install_metrics(
+    app,
 )
