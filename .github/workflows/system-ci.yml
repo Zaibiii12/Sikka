@@ -270,23 +270,66 @@ jobs:
         run: |
           set -euo pipefail
 
-          peer_hex="$(
-            cast rpc \
-              net_peerCount \
-              --rpc-url http://127.0.0.1:8547 \
-            | tr -d '"'
-          )"
+          ports=(
+            8545
+            8547
+            8549
+            8551
+          )
 
-          peer_count=$((peer_hex))
+          for attempt in $(seq 1 30); do
 
-          echo "Validator2 peers: $peer_count"
+            total=0
+            all_connected=1
 
-          if [ "$peer_count" -ne 3 ]; then
-            echo "ERROR: expected validator2 to have 3 peers."
-            exit 1
-          fi
+            echo
+            echo "Peer check attempt ${attempt}/30"
 
-          echo "Peer connectivity: PASS"
+            for index in "${!ports[@]}"; do
+
+              validator=$((index + 1))
+              port="${ports[$index]}"
+
+              peer_hex="$(
+                cast rpc \
+                  net_peerCount \
+                  --rpc-url \
+                  "http://127.0.0.1:${port}" \
+                | tr -d '"'
+              )"
+
+              peer_count=$((peer_hex))
+
+              echo \
+                "validator${validator} peers=${peer_count}"
+
+              total=$((total + peer_count))
+
+              if [ "$peer_count" -lt 1 ]; then
+                all_connected=0
+              fi
+
+            done
+
+            echo "Total peer degree: $total"
+
+            if \
+              [ "$all_connected" -eq 1 ] && \
+              [ "$total" -ge 6 ]; then
+
+              echo
+              echo "QBFT peer connectivity: PASS"
+              exit 0
+            fi
+
+            sleep 3
+
+          done
+
+          echo
+          echo "ERROR: validator peer topology did not converge."
+
+          exit 1
 
 
       - name: Run live QBFT backend test
