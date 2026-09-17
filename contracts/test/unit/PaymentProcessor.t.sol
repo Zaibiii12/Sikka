@@ -69,11 +69,7 @@ contract PaymentProcessorTest is Test {
 
     /// @dev Asks the deployed contract for the real EIP-712 digest (correct
     ///      domain separator baked in), then signs it with a known test key.
-    function _sign(PaymentProcessor.PaymentOrder memory order, uint256 signerPk)
-        internal
-        view
-        returns (bytes memory)
-    {
+    function _sign(PaymentProcessor.PaymentOrder memory order, uint256 signerPk) internal view returns (bytes memory) {
         bytes32 digest = processor.hashPaymentOrder(order);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, digest);
         return abi.encodePacked(r, s, v);
@@ -144,9 +140,7 @@ contract PaymentProcessorTest is Test {
 
         vm.warp(block.timestamp + 2);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(PaymentProcessor.PaymentExpired.selector, order.expiry, block.timestamp)
-        );
+        vm.expectRevert(abi.encodeWithSelector(PaymentProcessor.PaymentExpired.selector, order.expiry, block.timestamp));
         processor.submitPayment(order, sig);
     }
 

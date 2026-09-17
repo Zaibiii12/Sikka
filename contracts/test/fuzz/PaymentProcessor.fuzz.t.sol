@@ -54,12 +54,7 @@ contract PaymentProcessorFuzzTest is Test {
         amount = bound(amount, 1, PAYER_BALANCE);
 
         PaymentProcessor.PaymentOrder memory order = PaymentProcessor.PaymentOrder({
-            from: payer,
-            to: payee,
-            amount: amount,
-            nonce: 0,
-            expiry: block.timestamp + 1 hours,
-            paymentId: paymentId
+            from: payer, to: payee, amount: amount, nonce: 0, expiry: block.timestamp + 1 hours, paymentId: paymentId
         });
 
         processor.submitPayment(order, _sign(order));
@@ -119,12 +114,7 @@ contract PaymentProcessorFuzzTest is Test {
         bytes32 paymentId = keccak256(abi.encode("fuzz-replay", amount));
 
         PaymentProcessor.PaymentOrder memory order = PaymentProcessor.PaymentOrder({
-            from: payer,
-            to: payee,
-            amount: amount,
-            nonce: 0,
-            expiry: block.timestamp + 1 hours,
-            paymentId: paymentId
+            from: payer, to: payee, amount: amount, nonce: 0, expiry: block.timestamp + 1 hours, paymentId: paymentId
         });
         bytes memory sig = _sign(order);
 

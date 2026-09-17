@@ -19,8 +19,7 @@ contract Deploy is Script {
     // Default: the well-known, publicly-documented Anvil/Foundry test
     // account #0 private key, prefunded in our genesis.json (Phase 3).
     // NEVER use this key for anything beyond this local learning network.
-    uint256 constant DEFAULT_DEV_KEY =
-        0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+    uint256 constant DEFAULT_DEV_KEY = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
 
     function run() external {
         uint256 deployerKey = vm.envOr("PRIVATE_KEY", DEFAULT_DEV_KEY);
@@ -33,8 +32,7 @@ contract Deploy is Script {
         BankRegistry bankRegistry = new BankRegistry(address(accessManager));
         PaymentProcessor paymentProcessor =
             new PaymentProcessor(address(accessManager), address(bankRegistry), address(privateUSD));
-        SettlementEngine settlementEngine =
-            new SettlementEngine(address(accessManager), address(paymentProcessor));
+        SettlementEngine settlementEngine = new SettlementEngine(address(accessManager), address(paymentProcessor));
 
         // Governance (timelock) deployed but NOT yet holding GOVERNANCE_ROLE.
         // minDelay = 60 seconds for local testing convenience; a real

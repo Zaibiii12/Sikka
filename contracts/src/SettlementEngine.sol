@@ -75,8 +75,7 @@ contract SettlementEngine is ReentrancyGuard, Pausable {
             _settled[pid] = true;
         }
 
-        _batches[batchId] =
-            SettlementBatch({paymentIds: paymentIds, settledAt: block.timestamp, settledBy: msg.sender});
+        _batches[batchId] = SettlementBatch({paymentIds: paymentIds, settledAt: block.timestamp, settledBy: msg.sender});
         _batchIds.push(batchId);
 
         emit SettlementBatchCreated(batchId, len, msg.sender);

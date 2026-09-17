@@ -45,7 +45,7 @@ pydantic==2.13.5
 pydantic-settings==2.15.0
 pydantic_core==2.46.5
 Pygments==2.21.0
-pytest==8.4.2
+pytest==9.0.3
 pytest-asyncio==1.4.0
 python-dotenv==1.2.3
 pyunormalize==17.0.0

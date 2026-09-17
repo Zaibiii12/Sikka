@@ -97,13 +97,7 @@ contract PaymentProcessor is EIP712, ReentrancyGuard, Pausable {
     function hashPaymentOrder(PaymentOrder calldata order) public view returns (bytes32) {
         bytes32 structHash = keccak256(
             abi.encode(
-                PAYMENT_ORDER_TYPEHASH,
-                order.from,
-                order.to,
-                order.amount,
-                order.nonce,
-                order.expiry,
-                order.paymentId
+                PAYMENT_ORDER_TYPEHASH, order.from, order.to, order.amount, order.nonce, order.expiry, order.paymentId
             )
         );
         return _hashTypedDataV4(structHash);
@@ -117,11 +111,7 @@ contract PaymentProcessor is EIP712, ReentrancyGuard, Pausable {
     ///         relayer paying the gas on the payer's behalf) — authorization
     ///         comes entirely from the signature matching `order.from`, not
     ///         from who calls this function.
-    function submitPayment(PaymentOrder calldata order, bytes calldata signature)
-        external
-        nonReentrant
-        whenNotPaused
-    {
+    function submitPayment(PaymentOrder calldata order, bytes calldata signature) external nonReentrant whenNotPaused {
         _processPayment(order, signature);
     }
 

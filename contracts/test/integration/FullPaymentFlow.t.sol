@@ -56,12 +56,7 @@ contract FullPaymentFlowTest is Test {
         bytes32 paymentId = keccak256("integration-payment-1");
 
         PaymentProcessor.PaymentOrder memory order = PaymentProcessor.PaymentOrder({
-            from: bankA,
-            to: bankB,
-            amount: 5_000e6,
-            nonce: 0,
-            expiry: block.timestamp + 1 hours,
-            paymentId: paymentId
+            from: bankA, to: bankB, amount: 5_000e6, nonce: 0, expiry: block.timestamp + 1 hours, paymentId: paymentId
         });
 
         bytes32 digest = processor.hashPaymentOrder(order);
@@ -103,24 +98,14 @@ contract FullPaymentFlowTest is Test {
         bytes32 pid2 = keccak256("integration-payment-B");
 
         PaymentProcessor.PaymentOrder memory order1 = PaymentProcessor.PaymentOrder({
-            from: bankA,
-            to: bankB,
-            amount: 1_000e6,
-            nonce: 0,
-            expiry: block.timestamp + 1 hours,
-            paymentId: pid1
+            from: bankA, to: bankB, amount: 1_000e6, nonce: 0, expiry: block.timestamp + 1 hours, paymentId: pid1
         });
         bytes32 digest1 = processor.hashPaymentOrder(order1);
         (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(bankAPk, digest1);
         processor.submitPayment(order1, abi.encodePacked(r1, s1, v1));
 
         PaymentProcessor.PaymentOrder memory order2 = PaymentProcessor.PaymentOrder({
-            from: bankA,
-            to: bankB,
-            amount: 2_000e6,
-            nonce: 1,
-            expiry: block.timestamp + 1 hours,
-            paymentId: pid2
+            from: bankA, to: bankB, amount: 2_000e6, nonce: 1, expiry: block.timestamp + 1 hours, paymentId: pid2
         });
         bytes32 digest2 = processor.hashPaymentOrder(order2);
         (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(bankAPk, digest2);

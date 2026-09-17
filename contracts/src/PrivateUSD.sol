@@ -82,11 +82,7 @@ contract PrivateUSD is ERC20, Pausable {
 
     /// @notice Burn SIKKA from `from`. Restricted to BURNER_ROLE. Represents,
     ///         e.g., a redemption back to fiat.
-    function burn(address from, uint256 amount)
-        external
-        onlyRole(accessManager.BURNER_ROLE())
-        whenNotPaused
-    {
+    function burn(address from, uint256 amount) external onlyRole(accessManager.BURNER_ROLE()) whenNotPaused {
         if (amount == 0) revert ZeroAmount();
         _burn(from, amount);
         emit Burn(from, amount, msg.sender);

@@ -1,0 +1,307 @@
+name: BlockSikka CI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blocksikka-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+jobs:
+
+  contracts:
+    name: Contracts
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: contracts
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Foundry version
+        run: forge --version
+
+      - name: Check formatting
+        run: forge fmt --check
+
+      - name: Build
+        run: forge build --sizes
+
+      - name: Run Solidity tests
+        run: forge test -vv
+
+
+  backend-unit:
+    name: Backend Unit
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.lock.txt
+
+      - name: Compile Python
+        run: |
+          python -m compileall -q app scripts tests
+
+      - name: Run service-independent tests
+        run: |
+          pytest -q \
+            tests \
+            --ignore=tests/test_database_connection.py \
+            --ignore=tests/test_qbft_web3.py
+
+
+  backend-postgres:
+    name: Backend PostgreSQL
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+
+        env:
+          POSTGRES_USER: blocksikka
+          POSTGRES_PASSWORD: blocksikka_ci_password
+          POSTGRES_DB: blocksikka
+
+        ports:
+          - 5432:5432
+
+        options: >-
+          --health-cmd "pg_isready -U blocksikka -d blocksikka"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      APP_ENV: ci
+      DATABASE_URL: postgresql+psycopg://blocksikka:blocksikka_ci_password@127.0.0.1:5432/blocksikka
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.lock.txt
+
+      - name: Apply migrations
+        run: alembic upgrade head
+
+      - name: Check migration consistency
+        run: alembic check
+
+      - name: Test PostgreSQL connection
+        run: pytest -q tests/test_database_connection.py
+
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+
+
+  infrastructure:
+    name: Infrastructure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create CI PostgreSQL env
+        run: |
+          cat > backend/.env.db << 'ENVEOF'
+          POSTGRES_USER=blocksikka
+          POSTGRES_PASSWORD=blocksikka_ci_password
+          POSTGRES_DB=blocksikka
+          ENVEOF
+
+      - name: Validate PostgreSQL Compose
+        working-directory: backend
+        run: |
+          docker compose \
+            -f docker-compose.db.yml \
+            config \
+            >/dev/null
+
+      - name: Create CI monitoring env
+        run: |
+          cat > ops/monitoring/.env << 'ENVEOF'
+          GRAFANA_ADMIN_USER=admin
+          GRAFANA_ADMIN_PASSWORD=blocksikka_ci_only
+          POSTGRES_NETWORK=blocksikka-ci-postgres
+          ENVEOF
+
+          cat > ops/monitoring/.postgres-exporter.env << 'ENVEOF'
+          DATA_SOURCE_NAME=postgresql://blocksikka:blocksikka_ci_password@blocksikka-postgres:5432/blocksikka?sslmode=disable
+          ENVEOF
+
+      - name: Validate monitoring Compose
+        working-directory: ops/monitoring
+        run: |
+          docker compose \
+            -f docker-compose.monitoring.yml \
+            config \
+            >/dev/null
+
+      - name: Check Prometheus configuration
+        run: |
+          docker run \
+            --rm \
+            --entrypoint /bin/promtool \
+            -v "$PWD/ops/monitoring/prometheus:/etc/prometheus:ro" \
+            prom/prometheus:v3.5.0 \
+            check config \
+            /etc/prometheus/prometheus.yml
+
+      - name: Check Prometheus alert rules
+        run: |
+          docker run \
+            --rm \
+            --entrypoint /bin/promtool \
+            -v "$PWD/ops/monitoring/prometheus:/etc/prometheus:ro" \
+            prom/prometheus:v3.5.0 \
+            check rules \
+            /etc/prometheus/alerts.yml
+
+      - name: Validate Grafana dashboards
+        run: |
+          for file in ops/monitoring/grafana/dashboards/*.json; do
+            echo "Checking $file"
+            jq empty "$file"
+          done
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Audit Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pip-audit
+          pip-audit \
+            -r backend/requirements.lock.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Audit production frontend dependencies
+        working-directory: frontend
+        run: |
+          npm audit \
+            --omit=dev \
+            --audit-level=high
+
+      - name: Check protected secret paths
+        shell: bash
+        run: |
+          TRACKED="$(
+            git ls-files -- \
+              backend/.env \
+              backend/.env.db \
+              'backend/dev-keys/*' \
+              ops/monitoring/.env \
+              ops/monitoring/.postgres-exporter.env
+          )"
+
+          if [ -n "$TRACKED" ]; then
+            echo "ERROR: secret-bearing files are tracked:"
+            echo "$TRACKED"
+            exit 1
+          fi
+
+          echo "No protected secret files are tracked."

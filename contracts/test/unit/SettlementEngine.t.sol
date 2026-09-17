@@ -84,8 +84,7 @@ contract SettlementEngineTest is Test {
         assertTrue(settlement.isSettled(pid2));
         assertEq(settlement.batchCount(), 1);
 
-        (bytes32[] memory storedIds, uint256 settledAt, address settledBy) =
-            settlement.getBatch(keccak256("batch-1"));
+        (bytes32[] memory storedIds, uint256 settledAt, address settledBy) = settlement.getBatch(keccak256("batch-1"));
         assertEq(storedIds.length, 2);
         assertGt(settledAt, 0);
         assertEq(settledBy, settlementAdmin);
@@ -137,9 +136,7 @@ contract SettlementEngineTest is Test {
         pids2[0] = pid2;
 
         vm.prank(settlementAdmin);
-        vm.expectRevert(
-            abi.encodeWithSelector(SettlementEngine.BatchIdAlreadyUsed.selector, keccak256("dup-batch"))
-        );
+        vm.expectRevert(abi.encodeWithSelector(SettlementEngine.BatchIdAlreadyUsed.selector, keccak256("dup-batch")));
         settlement.createSettlementBatch(keccak256("dup-batch"), pids2);
     }
 
