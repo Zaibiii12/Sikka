@@ -6,6 +6,7 @@ from decimal import Decimal
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Integer,
@@ -362,5 +363,387 @@ class TokenTransfer(Base):
 
     block_timestamp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
+        nullable=False,
+    )
+
+
+class ReserveAccount(Base):
+    """
+    Fiat reserve ledger for a single currency.
+
+    Amounts are stored in integer minor units matching SIKKA's six
+    decimals. For USD:
+
+        $1.00 == 1_000_000 reserve units
+
+    verified_balance represents confirmed fiat reserves.
+    reserved_balance represents reserve temporarily committed to
+    pending mint operations.
+    """
+
+    __tablename__ = "reserve_accounts"
+
+    __table_args__ = (
+        CheckConstraint(
+            "verified_balance >= 0",
+            name="ck_reserve_verified_nonnegative",
+        ),
+        CheckConstraint(
+            "reserved_balance >= 0",
+            name="ck_reserve_reserved_nonnegative",
+        ),
+        CheckConstraint(
+            "reserved_balance <= verified_balance",
+            name="ck_reserve_reserved_within_verified",
+        ),
+    )
+
+    currency: Mapped[str] = mapped_column(
+        String(3),
+        primary_key=True,
+    )
+
+    verified_balance: Mapped[Decimal] = mapped_column(
+        Numeric(78, 0),
+        nullable=False,
+        default=Decimal(0),
+    )
+
+    reserved_balance: Mapped[Decimal] = mapped_column(
+        Numeric(78, 0),
+        nullable=False,
+        default=Decimal(0),
+    )
+
+    source_type: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="SIMULATED",
+    )
+
+    version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+class FiatMovement(Base):
+    """
+    Immutable-style fiat ledger entry.
+
+    DEPOSIT increases verified reserve.
+    PAYOUT decreases verified reserve.
+    ADJUSTMENT is reserved for explicit treasury reconciliation.
+    """
+
+    __tablename__ = "fiat_movements"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "reference",
+            name="uq_fiat_movement_reference",
+        ),
+        CheckConstraint(
+            "amount > 0",
+            name="ck_fiat_movement_amount_positive",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(
+        BigInteger,
+        primary_key=True,
+        autoincrement=True,
+    )
+
+    reference: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
+
+    movement_type: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        index=True,
+    )
+
+    currency: Mapped[str] = mapped_column(
+        String(3),
+        ForeignKey(
+            "reserve_accounts.currency",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+        index=True,
+    )
+
+    amount: Mapped[Decimal] = mapped_column(
+        Numeric(78, 0),
+        nullable=False,
+    )
+
+    bank_address: Mapped[str | None] = mapped_column(
+        String(42),
+        nullable=True,
+        index=True,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        index=True,
+    )
+
+    external_reference: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    details: Mapped[dict] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=dict,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+
+class MintRequest(Base):
+    """
+    Request to issue SIKKA against verified fiat reserve.
+    """
+
+    __tablename__ = "mint_requests"
+
+    __table_args__ = (
+        CheckConstraint(
+            "amount > 0",
+            name="ck_mint_request_amount_positive",
+        ),
+    )
+
+    request_id: Mapped[str] = mapped_column(
+        String(66),
+        primary_key=True,
+    )
+
+    bank_address: Mapped[str] = mapped_column(
+        String(42),
+        nullable=False,
+        index=True,
+    )
+
+    currency: Mapped[str] = mapped_column(
+        String(3),
+        ForeignKey(
+            "reserve_accounts.currency",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+    )
+
+    amount: Mapped[Decimal] = mapped_column(
+        Numeric(78, 0),
+        nullable=False,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        index=True,
+    )
+
+    reserve_movement_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey(
+            "fiat_movements.id",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+    )
+
+    transaction_hash: Mapped[str | None] = mapped_column(
+        String(66),
+        nullable=True,
+        index=True,
+    )
+
+    block_number: Mapped[int | None] = mapped_column(
+        BigInteger,
+        nullable=True,
+    )
+
+    failure_reason: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+class RedemptionRequest(Base):
+    """
+    Request to burn SIKKA and release the matching fiat reserve.
+    """
+
+    __tablename__ = "redemption_requests"
+
+    __table_args__ = (
+        CheckConstraint(
+            "amount > 0",
+            name="ck_redemption_request_amount_positive",
+        ),
+    )
+
+    request_id: Mapped[str] = mapped_column(
+        String(66),
+        primary_key=True,
+    )
+
+    bank_address: Mapped[str] = mapped_column(
+        String(42),
+        nullable=False,
+        index=True,
+    )
+
+    currency: Mapped[str] = mapped_column(
+        String(3),
+        ForeignKey(
+            "reserve_accounts.currency",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+    )
+
+    amount: Mapped[Decimal] = mapped_column(
+        Numeric(78, 0),
+        nullable=False,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        index=True,
+    )
+
+    payout_movement_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey(
+            "fiat_movements.id",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+    )
+
+    transaction_hash: Mapped[str | None] = mapped_column(
+        String(66),
+        nullable=True,
+        index=True,
+    )
+
+    block_number: Mapped[int | None] = mapped_column(
+        BigInteger,
+        nullable=True,
+    )
+
+    failure_reason: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+class ReserveReconciliation(Base):
+    """
+    Records comparison between an external/simulated reserve statement
+    and BlockSikka's internal reserve ledger.
+    """
+
+    __tablename__ = "reserve_reconciliations"
+
+    id: Mapped[int] = mapped_column(
+        BigInteger,
+        primary_key=True,
+        autoincrement=True,
+    )
+
+    currency: Mapped[str] = mapped_column(
+        String(3),
+        ForeignKey(
+            "reserve_accounts.currency",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+        index=True,
+    )
+
+    reported_balance: Mapped[Decimal] = mapped_column(
+        Numeric(78, 0),
+        nullable=False,
+    )
+
+    ledger_balance: Mapped[Decimal] = mapped_column(
+        Numeric(78, 0),
+        nullable=False,
+    )
+
+    difference: Mapped[Decimal] = mapped_column(
+        Numeric(78, 0),
+        nullable=False,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        index=True,
+    )
+
+    source_reference: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
         nullable=False,
     )
