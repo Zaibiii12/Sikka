@@ -1,0 +1,55 @@
+BlockSikka benchmark environment
+UTC: 2026-09-19T09:46:36Z
+Git commit: de4b0dfa5f0eb3785a771721e2b80ea7d04b2b11
+
+=== OS ===
+Linux Wawawa 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025 x86_64 GNU/Linux
+
+=== CPU ===
+CPU(s):                               12
+On-line CPU(s) list:                  0-11
+Model name:                           13th Gen Intel(R) Core(TM) i5-13420H
+Thread(s) per core:                   2
+Core(s) per socket:                   6
+Socket(s):                            1
+NUMA node0 CPU(s):                    0-11
+
+=== MEMORY ===
+               total        used        free      shared  buff/cache   available
+Mem:           7.6Gi       3.4Gi       2.7Gi        34Mi       1.8Gi       4.2Gi
+Swap:          2.0Gi          0B       2.0Gi
+
+=== DOCKER ===
+Docker version 29.8.0, build 88096ef
+Docker Compose version v5.5.1
+
+=== BESU ===
+besu/v26.7.1/linux-x86_64/openjdk-java-25
+
+=== FOUNDRY ===
+forge Version: 1.8.1
+Commit SHA: 982849d3140c01fd3b72905759581a132df7aa98
+Build Timestamp: 2026-08-28T17:46:00.964391484Z (1787939160)
+Build Profile: dist
+cast Version: 1.8.1
+Commit SHA: 982849d3140c01fd3b72905759581a132df7aa98
+Build Timestamp: 2026-08-28T17:46:00.964391484Z (1787939160)
+Build Profile: dist
+
+=== NODE ===
+v24.21.0
+11.19.0
+
+=== PYTHON ===
+Python 3.14.4
+
+=== RUNNING CONTAINERS ===
+NAMES                          STATUS
+sikka-validator1               Up 14 minutes (healthy)
+sikka-validator2               Up 14 minutes (healthy)
+sikka-validator3               Up 14 minutes (healthy)
+sikka-validator4               Up 14 minutes (healthy)
+blocksikka-prometheus          Up 2 hours
+blocksikka-grafana             Up 2 hours
+blocksikka-postgres-exporter   Up 2 hours
+blocksikka-postgres            Up 2 hours (healthy)
