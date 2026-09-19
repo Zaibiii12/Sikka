@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -28,41 +29,100 @@ import {
 import type {
   Bank,
   IndexedPayment,
+  IndexedSettlement,
   IndexerStatus,
   NetworkHealth,
   PublicConfig,
   TokenBalance,
 } from "./types";
 
+import Sidebar, {
+  type AppView,
+} from "./components/Sidebar";
 
-function short(value: string): string {
-  if (value.length <= 14) {
-    return value;
+import Topbar from "./components/Topbar";
+import MetricCard from "./components/MetricCard";
+import AccountSummary from "./components/AccountSummary";
+import PaymentForm from "./components/PaymentForm";
+import ActivityTable from "./components/ActivityTable";
+import SettlementTable from "./components/SettlementTable";
+import InstitutionDirectory from "./components/InstitutionDirectory";
+import AddressDisplay from "./components/AddressDisplay";
+import StatusBadge from "./components/StatusBadge";
+
+import {
+  formatDisplayAmount,
+  formatInteger,
+} from "./format";
+
+
+const viewMeta: Record<
+  AppView,
+  {
+    title: string;
+    subtitle: string;
   }
+> = {
+  dashboard: {
+    title: "Dashboard",
+    subtitle:
+      "Treasury overview and real-time settlement activity.",
+  },
 
-  return (
-    value.slice(0, 6)
-    + "..."
-    + value.slice(-4)
+  payments: {
+    title: "Payments",
+    subtitle:
+      "Authorize, sign and finalize institutional SIKKA transfers.",
+  },
+
+  settlements: {
+    title: "Settlements",
+    subtitle:
+      "Review finalized settlement batches recorded on-chain.",
+  },
+
+  institutions: {
+    title: "Institutions",
+    subtitle:
+      "Permissioned participants authorized on the BlockSikka settlement rail.",
+  },
+
+  network: {
+    title: "Network",
+    subtitle:
+      "QBFT consensus, validator membership and indexing health.",
+  },
+};
+
+
+export default function App() {
+  const [
+    activeView,
+    setActiveView,
+  ] = useState<AppView>(
+    "dashboard",
   );
-}
 
-
-function App() {
   const [
     config,
     setConfig,
-  ] = useState<PublicConfig | null>(null);
+  ] = useState<PublicConfig | null>(
+    null,
+  );
 
   const [
     health,
     setHealth,
-  ] = useState<NetworkHealth | null>(null);
+  ] = useState<NetworkHealth | null>(
+    null,
+  );
 
   const [
     indexer,
     setIndexer,
-  ] = useState<IndexerStatus | null>(null);
+  ] = useState<IndexerStatus | null>(
+    null,
+  );
 
   const [
     banks,
@@ -75,6 +135,11 @@ function App() {
   ] = useState<IndexedPayment[]>([]);
 
   const [
+    settlements,
+    setSettlements,
+  ] = useState<IndexedSettlement[]>([]);
+
+  const [
     walletAddress,
     setWalletAddress,
   ] = useState("");
@@ -82,17 +147,23 @@ function App() {
   const [
     walletBank,
     setWalletBank,
-  ] = useState<Bank | null>(null);
+  ] = useState<Bank | null>(
+    null,
+  );
 
   const [
     balance,
     setBalance,
-  ] = useState<TokenBalance | null>(null);
+  ] = useState<TokenBalance | null>(
+    null,
+  );
 
   const [
     nonce,
     setNonce,
-  ] = useState<number | null>(null);
+  ] = useState<number | null>(
+    null,
+  );
 
   const [
     recipient,
@@ -120,69 +191,82 @@ function App() {
   ] = useState(false);
 
 
-  const refreshSystem = useCallback(
-    async () => {
-      try {
-        const [
-          nextHealth,
-          nextIndexer,
-          nextBanks,
-          nextPayments,
-        ] = await Promise.all([
-          api.health(),
-          api.indexerStatus(),
-          api.banks(),
-          api.payments(),
-        ]);
-
-        setHealth(nextHealth);
-        setIndexer(nextIndexer);
-        setBanks(nextBanks);
-        setPayments(nextPayments.items);
-      } catch (nextError) {
-        setError(
-          nextError instanceof Error
-            ? nextError.message
-            : String(nextError),
-        );
-      }
-    },
-    [],
-  );
-
-
-  const refreshWallet = useCallback(
-    async (address: string) => {
-      try {
-        const [
-          nextBalance,
-          nextNonce,
-        ] = await Promise.all([
-          api.balance(address),
-          api.nonce(address),
-        ]);
-
-        setBalance(nextBalance);
-        setNonce(nextNonce.nonce);
-
+  const refreshSystem =
+    useCallback(
+      async () => {
         try {
-          const bank =
-            await api.bank(address);
+          const [
+            nextHealth,
+            nextIndexer,
+            nextBanks,
+            nextPayments,
+            nextSettlements,
+          ] = await Promise.all([
+            api.health(),
+            api.indexerStatus(),
+            api.banks(),
+            api.payments(),
+            api.settlements(),
+          ]);
 
-          setWalletBank(bank);
-        } catch {
-          setWalletBank(null);
+          setHealth(nextHealth);
+          setIndexer(nextIndexer);
+          setBanks(nextBanks);
+          setPayments(
+            nextPayments.items,
+          );
+          setSettlements(
+            nextSettlements.items,
+          );
+        } catch (nextError) {
+          setError(
+            nextError
+              instanceof Error
+              ? nextError.message
+              : String(nextError),
+          );
         }
-      } catch (nextError) {
-        setError(
-          nextError instanceof Error
-            ? nextError.message
-            : String(nextError),
-        );
-      }
-    },
-    [],
-  );
+      },
+      [],
+    );
+
+
+  const refreshWallet =
+    useCallback(
+      async (
+        address: string,
+      ) => {
+        try {
+          const [
+            nextBalance,
+            nextNonce,
+          ] = await Promise.all([
+            api.balance(address),
+            api.nonce(address),
+          ]);
+
+          setBalance(nextBalance);
+          setNonce(nextNonce.nonce);
+
+          try {
+            const bank =
+              await api.bank(address);
+
+            setWalletBank(bank);
+          } catch {
+            setWalletBank(null);
+          }
+        } catch (nextError) {
+          setError(
+            nextError
+              instanceof Error
+              ? nextError.message
+              : String(nextError),
+          );
+        }
+      },
+      [],
+    );
 
 
   useEffect(() => {
@@ -196,7 +280,8 @@ function App() {
         await refreshSystem();
       } catch (nextError) {
         setError(
-          nextError instanceof Error
+          nextError
+            instanceof Error
             ? nextError.message
             : String(nextError),
         );
@@ -210,7 +295,9 @@ function App() {
       window.setInterval(() => {
         void refreshSystem();
 
-        if (walletAddress !== "") {
+        if (
+          walletAddress !== ""
+        ) {
           void refreshWallet(
             walletAddress,
           );
@@ -239,7 +326,8 @@ function App() {
       await refreshWallet(address);
     } catch (nextError) {
       setError(
-        nextError instanceof Error
+        nextError
+          instanceof Error
           ? nextError.message
           : String(nextError),
       );
@@ -292,12 +380,13 @@ function App() {
       }
 
       setStatus(
-        "Checking allowance...",
+        "Checking token allowance...",
       );
 
       await ensureAllowance(
         config.token.address,
-        config.payment_processor_address,
+        config
+          .payment_processor_address,
         walletAddress,
         amountBase,
       );
@@ -314,7 +403,7 @@ function App() {
         ) + 3600;
 
       setStatus(
-        "Preparing payment...",
+        "Preparing signed payment order...",
       );
 
       const prepared =
@@ -343,7 +432,7 @@ function App() {
       );
 
       setStatus(
-        "Confirm EIP-712 signature...",
+        "Confirm EIP-712 signature in your wallet...",
       );
 
       const signature =
@@ -353,7 +442,7 @@ function App() {
         );
 
       setStatus(
-        "Relaying transaction...",
+        "Relaying transaction to the network...",
       );
 
       const relay =
@@ -383,7 +472,7 @@ function App() {
       }
 
       setStatus(
-        "Waiting for indexer...",
+        "Finalized. Waiting for indexer...",
       );
 
       await waitForIndexedPayment(
@@ -394,7 +483,11 @@ function App() {
         "Payment finalized and indexed.",
       );
 
+      setAmount("1");
+      setRecipient("");
+
       await refreshSystem();
+
       await refreshWallet(
         walletAddress,
       );
@@ -404,7 +497,8 @@ function App() {
       );
 
       setError(
-        nextError instanceof Error
+        nextError
+          instanceof Error
           ? nextError.message
           : String(nextError),
       );
@@ -415,392 +509,713 @@ function App() {
 
 
   const recipients =
-    banks.filter(
-      (bank) =>
-        bank.active
-        && bank.address.toLowerCase()
-          !== walletAddress.toLowerCase(),
+    useMemo(
+      () =>
+        banks.filter(
+          (bank) =>
+            bank.active
+            && (
+              bank.address
+                .toLowerCase()
+              !== walletAddress
+                .toLowerCase()
+            ),
+        ),
+      [
+        banks,
+        walletAddress,
+      ],
     );
 
 
-  return (
-    <main className="app-shell">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">
-            Permissioned EVM settlement network
-          </p>
+  const symbol =
+    config?.token.symbol
+    ?? "SIKKA";
 
-          <h1>
-            BlockSikka
-          </h1>
+  const decimals =
+    config?.token.decimals
+    ?? 6;
 
-          <p className="hero-copy">
-            SIKKA payments finalized by Besu QBFT
-            and indexed into PostgreSQL.
-          </p>
-        </div>
+  const balanceDisplay =
+    formatDisplayAmount(
+      balance?.display,
+      decimals,
+    );
 
-        <button
-          className="primary-button"
-          onClick={() => {
-            void handleConnect();
-          }}
-        >
-          {walletAddress === ""
-            ? "Connect wallet"
-            : short(walletAddress)}
-        </button>
-      </header>
+  const networkHealthy =
+    Boolean(
+      health?.connected
+      && !health?.syncing
+      && health.validators.length
+        === 4,
+    );
 
+  const indexerLag =
+    indexer?.lag_blocks
+    ?? null;
 
-      {error !== "" && (
-        <div className="error-banner">
-          {error}
-        </div>
-      )}
+  const indexerHealthy =
+    indexerLag !== null
+    && indexerLag <= 1;
+
+  const meta =
+    viewMeta[activeView];
 
 
-      <section className="status-grid">
-        <article className="stat-card">
-          <span>
-            QBFT
-          </span>
-
-          <strong>
-            {health?.connected
-              ? "Connected"
-              : "Offline"}
-          </strong>
-
-          <small>
-            Block{" "}
-            {health?.latest_block ?? "-"}
-          </small>
-        </article>
-
-
-        <article className="stat-card">
-          <span>
-            Validators
-          </span>
-
-          <strong>
-            {health?.validators.length ?? "-"}
-          </strong>
-
-          <small>
-            Peers{" "}
-            {health?.peer_count ?? "-"}
-          </small>
-        </article>
-
-
-        <article className="stat-card">
-          <span>
-            Indexer
-          </span>
-
-          <strong>
-            {indexer?.caught_up
-              ? "Caught up"
-              : "Syncing"}
-          </strong>
-
-          <small>
-            Lag{" "}
-            {indexer?.lag_blocks ?? "-"}
-          </small>
-        </article>
-
-
-        <article className="stat-card">
-          <span>
-            Asset
-          </span>
-
-          <strong>
-            {config?.token.symbol ?? "SIKKA"}
-          </strong>
-
-          <small>
-            Chain{" "}
-            {config?.chain_id ?? 1337}
-          </small>
-        </article>
-      </section>
-
-
-      <section className="two-column">
-        <article className="panel">
-          <p className="eyebrow">
-            Wallet
-          </p>
-
-          <h2>
-            Bank account
-          </h2>
-
-          {walletAddress === "" ? (
-            <p className="muted">
-              Connect Bank A to begin.
-            </p>
-          ) : (
-            <div className="wallet-details">
-              <div>
-                <span>
-                  Address
+  function renderDashboard() {
+    return (
+      <>
+        <section className="metric-grid">
+          <MetricCard
+            label="Available balance"
+            value={
+              <>
+                {balanceDisplay}
+                <span className="metric-unit">
+                  {symbol}
                 </span>
-
-                <code>
-                  {walletAddress}
-                </code>
-              </div>
-
-              <div>
-                <span>
-                  Bank
-                </span>
-
-                <strong>
-                  {walletBank !== null
-                    ? walletBank.name
-                    : "Not registered"}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  Balance
-                </span>
-
-                <strong>
-                  {balance !== null
-                    ? String(
-                        balance.display,
-                      ) + " SIKKA"
-                    : "-"}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  Nonce
-                </span>
-
-                <strong>
-                  {nonce ?? "-"}
-                </strong>
-              </div>
-            </div>
-          )}
-        </article>
-
-
-        <article className="panel">
-          <p className="eyebrow">
-            Payment
-          </p>
-
-          <h2>
-            Send SIKKA
-          </h2>
-
-          <label>
-            Recipient
-
-            <select
-              value={recipient}
-              disabled={
-                busy
-                || walletAddress === ""
-              }
-              onChange={(event) => {
-                setRecipient(
-                  event.target.value,
-                );
-              }}
-            >
-              <option value="">
-                Select bank
-              </option>
-
-              {recipients.map(
-                (bank) => (
-                  <option
-                    key={bank.address}
-                    value={bank.address}
-                  >
-                    {bank.name}
-                    {" - "}
-                    {short(
-                      bank.address,
-                    )}
-                  </option>
-                ),
-              )}
-            </select>
-          </label>
-
-
-          <label>
-            Amount
-
-            <input
-              type="number"
-              min="0.000001"
-              step="0.000001"
-              value={amount}
-              disabled={busy}
-              onChange={(event) => {
-                setAmount(
-                  event.target.value,
-                );
-              }}
-            />
-          </label>
-
-
-          <button
-            className="primary-button full-width"
-            disabled={
-              busy
-              || walletAddress === ""
-              || recipient === ""
+              </>
             }
-            onClick={() => {
+            meta={
+              walletBank?.name
+              ?? (
+                walletAddress
+                  ? "Wallet connected"
+                  : "Connect a wallet"
+              )
+            }
+          />
+
+          <MetricCard
+            label="Network"
+            value={
+              networkHealthy
+                ? "Operational"
+                : "Attention"
+            }
+            status={
+              networkHealthy
+                ? "Healthy"
+                : "Check"
+            }
+            tone={
+              networkHealthy
+                ? "success"
+                : "warning"
+            }
+            meta={
+              `Block ${
+                formatInteger(
+                  health?.latest_block,
+                )
+              }`
+            }
+          />
+
+          <MetricCard
+            label="Indexer"
+            value={
+              indexerLag === 0
+                ? "Synchronized"
+                : indexerLag === 1
+                  ? "Near real-time"
+                  : "Syncing"
+            }
+            status={
+              indexerHealthy
+                ? "Healthy"
+                : "Lagging"
+            }
+            tone={
+              indexerHealthy
+                ? "success"
+                : "warning"
+            }
+            meta={
+              `Lag ${
+                indexer?.lag_blocks
+                ?? "—"
+              } blocks`
+            }
+          />
+
+          <MetricCard
+            label="Validators"
+            value={
+              health?.validators
+                .length
+              ?? "—"
+            }
+            status="QBFT"
+            tone="info"
+            meta={
+              `${
+                health?.peer_count
+                ?? "—"
+              } peers visible`
+            }
+          />
+        </section>
+
+        <section className="primary-grid">
+          <AccountSummary
+            walletAddress={
+              walletAddress
+            }
+            bank={walletBank}
+            balance={
+              balanceDisplay
+            }
+            symbol={symbol}
+            nonce={nonce}
+          />
+
+          <PaymentForm
+            recipients={recipients}
+            recipient={recipient}
+            amount={amount}
+            symbol={symbol}
+            status={status}
+            busy={busy}
+            connected={
+              walletAddress !== ""
+            }
+            onRecipientChange={
+              setRecipient
+            }
+            onAmountChange={
+              setAmount
+            }
+            onSubmit={() => {
               void handlePayment();
             }}
-          >
-            {busy
-              ? "Processing..."
-              : "Sign & send payment"}
-          </button>
+          />
+        </section>
 
-          <p className="payment-status">
-            {status}
-          </p>
-        </article>
-      </section>
+        <ActivityTable
+          payments={payments}
+          banks={banks}
+          walletAddress={
+            walletAddress
+          }
+          decimals={decimals}
+          symbol={symbol}
+          limit={8}
+        />
+      </>
+    );
+  }
 
 
-      <section className="panel">
-        <div className="panel-title">
-          <div>
-            <p className="eyebrow">
-              Indexed history
-            </p>
-
-            <h2>
-              Recent payments
-            </h2>
-          </div>
-
-          <button
-            className="secondary-button"
-            onClick={() => {
-              void refreshSystem();
+  function renderPayments() {
+    return (
+      <>
+        <section className="payments-workspace">
+          <PaymentForm
+            recipients={recipients}
+            recipient={recipient}
+            amount={amount}
+            symbol={symbol}
+            status={status}
+            busy={busy}
+            connected={
+              walletAddress !== ""
+            }
+            onRecipientChange={
+              setRecipient
+            }
+            onAmountChange={
+              setAmount
+            }
+            onSubmit={() => {
+              void handlePayment();
             }}
-          >
-            Refresh
-          </button>
-        </div>
+          />
+
+          <AccountSummary
+            walletAddress={
+              walletAddress
+            }
+            bank={walletBank}
+            balance={
+              balanceDisplay
+            }
+            symbol={symbol}
+            nonce={nonce}
+          />
+        </section>
+
+        <ActivityTable
+          payments={payments}
+          banks={banks}
+          walletAddress={
+            walletAddress
+          }
+          decimals={decimals}
+          symbol={symbol}
+        />
+      </>
+    );
+  }
 
 
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>
-                  Payment
-                </th>
+  function renderSettlements() {
+    return (
+      <>
+        <section className="metric-grid">
+          <MetricCard
+            label="Indexed batches"
+            value={
+              settlements.length
+            }
+            meta="SettlementEngine history"
+          />
 
-                <th>
-                  From
-                </th>
+          <MetricCard
+            label="Finalized payments"
+            value={
+              settlements.reduce(
+                (
+                  total,
+                  settlement,
+                ) =>
+                  total
+                  + settlement.payment_count,
+                0,
+              )
+            }
+            status="On-chain"
+            tone="success"
+            meta="Marked settled by indexer"
+          />
 
-                <th>
-                  To
-                </th>
+          <MetricCard
+            label="Latest block"
+            value={
+              formatInteger(
+                health?.latest_block,
+              )
+            }
+            meta={
+              `Chain ${
+                config?.chain_id
+                ?? 1337
+              }`
+            }
+          />
 
-                <th>
-                  Amount
-                </th>
+          <MetricCard
+            label="Indexer lag"
+            value={
+              `${
+                indexer?.lag_blocks
+                ?? "—"
+              }`
+            }
+            status={
+              indexerLag === 0
+                ? "Synced"
+                : indexerLag === 1
+                  ? "Near live"
+                  : "Lagging"
+            }
+            tone={
+              indexerHealthy
+                ? "success"
+                : "warning"
+            }
+            meta="blocks"
+          />
+        </section>
 
-                <th>
-                  Block
-                </th>
-              </tr>
-            </thead>
+        <SettlementTable
+          settlements={settlements}
+        />
+      </>
+    );
+  }
 
-            <tbody>
-              {payments.map(
-                (payment) => (
-                  <tr
-                    key={payment.payment_id}
-                  >
-                    <td>
-                      <code>
-                        {short(
-                          payment.payment_id,
-                        )}
-                      </code>
-                    </td>
 
-                    <td>
-                      {short(
-                        payment.from_address,
-                      )}
-                    </td>
+  function renderInstitutions() {
+    const activeInstitutions =
+      banks.filter(
+        (bank) => bank.active,
+      ).length;
 
-                    <td>
-                      {short(
-                        payment.to_address,
-                      )}
-                    </td>
+    const inactiveInstitutions =
+      banks.length
+      - activeInstitutions;
 
-                    <td>
-                      {String(
-                        payment.amount,
-                      )}
-                    </td>
+    return (
+      <>
+        <section className="metric-grid">
+          <MetricCard
+            label="Registered institutions"
+            value={banks.length}
+            meta="BankRegistry participants"
+          />
 
-                    <td>
-                      {payment.block_number}
-                    </td>
-                  </tr>
-                ),
+          <MetricCard
+            label="Active institutions"
+            value={activeInstitutions}
+            status="Authorized"
+            tone="success"
+            meta="Eligible for payments"
+          />
+
+          <MetricCard
+            label="Inactive institutions"
+            value={inactiveInstitutions}
+            status={
+              inactiveInstitutions === 0
+                ? "None"
+                : "Restricted"
+            }
+            tone={
+              inactiveInstitutions === 0
+                ? "success"
+                : "warning"
+            }
+            meta="Not eligible for payments"
+          />
+
+          <MetricCard
+            label="Onboarding control"
+            value="BANK ADMIN"
+            status="Permissioned"
+            tone="info"
+            meta="Governed institution enrollment"
+          />
+        </section>
+
+        <InstitutionDirectory
+          banks={banks}
+          connectedAddress={
+            walletAddress
+          }
+        />
+      </>
+    );
+  }
+
+
+  function renderNetwork() {
+    return (
+      <>
+        <section className="metric-grid">
+          <MetricCard
+            label="Consensus"
+            value={
+              health?.connected
+                ? "QBFT online"
+                : "Offline"
+            }
+            status={
+              networkHealthy
+                ? "Healthy"
+                : "Attention"
+            }
+            tone={
+              networkHealthy
+                ? "success"
+                : "warning"
+            }
+            meta={
+              config?.network_name
+              ?? "BlockSikka"
+            }
+          />
+
+          <MetricCard
+            label="Chain ID"
+            value={
+              config?.chain_id
+              ?? "—"
+            }
+            meta="Permissioned EVM"
+          />
+
+          <MetricCard
+            label="Block height"
+            value={
+              formatInteger(
+                health?.latest_block,
+              )
+            }
+            meta={
+              health?.syncing
+                ? "Node synchronizing"
+                : "Node synchronized"
+            }
+          />
+
+          <MetricCard
+            label="Indexer"
+            value={
+              indexerLag === 0
+                ? "Caught up"
+                : indexerLag === 1
+                  ? "Near real-time"
+                  : "Syncing"
+            }
+            status={
+              indexerHealthy
+                ? "Healthy"
+                : "Lagging"
+            }
+            tone={
+              indexerHealthy
+                ? "success"
+                : "warning"
+            }
+            meta={
+              `Checkpoint ${
+                formatInteger(
+                  indexer
+                    ?.last_indexed_block,
+                )
+              }`
+            }
+          />
+        </section>
+
+        <section className="network-grid">
+          <article className="surface">
+            <div className="surface-heading">
+              <div>
+                <span className="section-kicker">
+                  Consensus
+                </span>
+
+                <h2>
+                  Validator network
+                </h2>
+              </div>
+
+              <StatusBadge
+                label={
+                  networkHealthy
+                    ? "Operational"
+                    : "Attention"
+                }
+                tone={
+                  networkHealthy
+                    ? "success"
+                    : "warning"
+                }
+              />
+            </div>
+
+            <div className="validator-list">
+              {health?.validators
+                .map(
+                  (
+                    validator,
+                    index,
+                  ) => (
+                    <div
+                      className="validator-row"
+                      key={validator}
+                    >
+                      <div className="validator-number">
+                        {index + 1}
+                      </div>
+
+                      <div>
+                        <strong>
+                          Validator {
+                            index + 1
+                          }
+                        </strong>
+
+                        <AddressDisplay
+                          value={validator}
+                          compact
+                        />
+                      </div>
+
+                      <StatusBadge
+                        label="Active"
+                        tone="success"
+                      />
+                    </div>
+                  ),
+                )
+              ?? (
+                <p className="empty-copy">
+                  Validator membership
+                  unavailable.
+                </p>
               )}
+            </div>
+          </article>
 
-              {payments.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="empty"
-                  >
-                    No indexed payments.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+          <article className="surface">
+            <div className="surface-heading">
+              <div>
+                <span className="section-kicker">
+                  Infrastructure
+      </span>
+
+                <h2>
+                  Chain configuration
+                </h2>
+              </div>
+            </div>
+
+            <dl className="detail-list">
+              <div>
+                <dt>Network</dt>
+                <dd>
+                  {config?.network_name
+                    ?? "—"}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Chain ID</dt>
+                <dd>
+                  {config?.chain_id
+                    ?? "—"}
+                </dd>
+              </div>
+
+              <div>
+                <dt>
+                  Visible peers
+                </dt>
+                <dd>
+                  {health?.peer_count
+                    ?? "—"}
+                </dd>
+              </div>
+
+              <div>
+                <dt>
+                  Latest block
+                </dt>
+                <dd>
+                  {formatInteger(
+                    health
+                      ?.latest_block,
+                  )}
+                </dd>
+              </div>
+
+              <div>
+                <dt>
+                  Indexer target
+                </dt>
+                <dd>
+                  {formatInteger(
+                    indexer
+                      ?.target_block,
+                  )}
+                </dd>
+              </div>
+
+              <div>
+                <dt>
+                  Confirmations
+                </dt>
+                <dd>
+                  {indexer
+                    ?.confirmations
+                    ?? "—"}
+                </dd>
+              </div>
+            </dl>
+          </article>
+        </section>
+      </>
+    );
+  }
 
 
-      <footer>
-        <span>
-          BlockSikka development network
-        </span>
+  return (
+    <div className="app-frame">
+      <Sidebar
+        activeView={activeView}
+        onChange={setActiveView}
+        networkHealthy={
+          networkHealthy
+        }
+      />
 
-        <span>
-          Chain ID{" "}
-          {config?.chain_id ?? 1337}
-        </span>
-      </footer>
-    </main>
+      <div className="workspace">
+        <Topbar
+          title={meta.title}
+          subtitle={meta.subtitle}
+          walletAddress={
+            walletAddress
+          }
+          bankName={
+            walletBank?.name
+          }
+          onConnect={() => {
+            void handleConnect();
+          }}
+        />
+
+        <main className="workspace-content">
+          {error !== "" && (
+            <div
+              className="alert-banner"
+              role="alert"
+            >
+              <div>
+                <strong>
+                  Action required
+                </strong>
+
+                <p>{error}</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setError("");
+                }}
+                aria-label="Dismiss error"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {activeView
+            === "dashboard"
+            && renderDashboard()}
+
+          {activeView
+            === "payments"
+            && renderPayments()}
+
+          {activeView
+            === "settlements"
+            && renderSettlements()}
+
+          {activeView
+            === "institutions"
+            && renderInstitutions()}
+
+          {activeView
+            === "network"
+            && renderNetwork()}
+        </main>
+
+        <footer className="workspace-footer">
+          <span>
+            BlockSikka development network
+          </span>
+
+          <span>
+            Chain ID{" "}
+            {config?.chain_id
+              ?? 1337}
+          </span>
+        </footer>
+      </div>
+    </div>
   );
 }
-
-
-export default App;
