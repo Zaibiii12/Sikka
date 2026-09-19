@@ -335,4 +335,3 @@ def mint_request(
     return serialize_mint_request(
         row
     )
-
