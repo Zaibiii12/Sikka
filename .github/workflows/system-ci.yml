@@ -120,82 +120,122 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "=== PRIVATE KEY FORMAT ==="
+          echo "=== NORMALIZE GENERATED PRIVATE KEYS ==="
 
           for i in 1 2 3 4; do
             key="keys/validator${i}/key"
 
-            test -f "$key"
+            if [ ! -f "$key" ]; then
+              echo "ERROR: validator${i} private key missing."
+              exit 1
+            fi
 
             value="$(
               tr -d '\r\n' \
                 < "$key"
             )"
 
-            if ! [[ "$value" =~ ^(0x)?[0-9a-fA-F]{64}$ ]]; then
-              echo \
-                "ERROR: validator${i} private key format is invalid."
+            if ! [[ "$value" =~ ^0x[0-9a-fA-F]{64}$ ]]; then
+              echo "ERROR: validator${i} private key format invalid."
               unset value
               exit 1
             fi
 
+            # Rewrite the CI copy as exactly:
+            # 0x + 64 hex characters, with no CR/LF bytes.
+            printf '%s' "$value" \
+              > "${key}.normalized"
+
+            mv \
+              "${key}.normalized" \
+              "$key"
+
             unset value
 
-            echo \
-              "validator${i} private key format: PASS"
-          done
+            # CI keys are ephemeral and exist only on this disposable
+            # GitHub Actions runner. Allow the Besu container user to
+            # read the bind-mounted file regardless of host UID.
+            chmod 644 "$key"
 
-          echo
-          echo "=== CI PRIVATE KEY PERMISSIONS ==="
-
-          # These keys exist only on the disposable GitHub Actions runner.
-          # Make them readable regardless of the UID Besu's entrypoint
-          # ultimately drops to. Local/operator keys remain mode 0600.
-          for i in 1 2 3 4; do
-            key="keys/validator${i}/key"
-
-            sudo chmod 644 "$key"
-
-            mode="$(
-              stat -c '%a' "$key"
+            bytes="$(
+              wc -c \
+                < "$key" \
+                | tr -d ' '
             )"
 
-            if [ "$mode" != "644" ]; then
-              echo "ERROR: validator${i} key mode is ${mode}; expected 644."
+            if [ "$bytes" -ne 66 ]; then
+              echo \
+                "ERROR: validator${i} key size=${bytes}; expected 66."
               exit 1
             fi
 
-            echo "validator${i} CI key readability: PASS"
+            if ! grep -Eq \
+              '^0x[0-9a-fA-F]{64}$' \
+              "$key"; then
+
+              echo \
+                "ERROR: validator${i} normalized key validation failed."
+              exit 1
+            fi
+
+            echo \
+              "validator${i} normalized private key: PASS (66 bytes)"
           done
 
           echo
-          echo "=== BESU PRIVATE KEY PARSE TEST ==="
+          echo "=== DIRECT BESU KEY PARSE ==="
 
           for i in 1 2 3 4; do
             key="$(pwd)/keys/validator${i}/key"
 
-            docker run \
-              --rm \
-              -v "${key}:/opt/besu/ci-validator-key:ro" \
-              hyperledger/besu:26.7.1 \
-              --data-path=/tmp/besu-data \
-              --node-private-key-file=/opt/besu/ci-validator-key \
-              public-key \
-              export-address \
-              --to=/tmp/validator-address \
-              >/dev/null
+            output="$(
+              docker run \
+                --rm \
+                -v "${key}:/opt/besu/ci-validator-key:ro" \
+                hyperledger/besu:26.7.1 \
+                public-key \
+                export-address \
+                --node-private-key-file=/opt/besu/ci-validator-key \
+                2>&1
+            )"
+
+            address="$(
+              printf '%s\n' "$output" \
+                | grep -E \
+                    '^0x[0-9a-fA-F]{40}$' \
+                | tail -n 1 \
+                || true
+            )"
+
+            if ! [[ "$address" =~ ^0x[0-9a-fA-F]{40}$ ]]; then
+              echo \
+                "ERROR: validator${i} direct Besu key parse failed."
+
+              printf '%s\n' "$output" \
+                | tail -30
+
+              exit 1
+            fi
 
             echo \
-              "validator${i} Besu key parse: PASS"
+              "validator${i} direct Besu key parse: PASS"
           done
 
           echo
           echo "=== STATIC NODE FILES ==="
 
-          test "$(
+          all_count="$(
             jq length \
               config/static-nodes.json
-          )" -eq 4
+          )"
+
+          if [ "$all_count" -ne 4 ]; then
+            echo \
+              "ERROR: expected 4 total static nodes; got ${all_count}."
+            exit 1
+          fi
+
+          echo "Full static-node set=4: PASS"
 
           for i in 1 2 3 4; do
             count="$(
@@ -210,8 +250,48 @@ jobs:
             fi
 
             echo \
-              "validator${i} static peers=${count}: PASS"
+              "validator${i} static peers=3: PASS"
           done
+
+          echo
+          echo "=== COMPOSE-MOUNTED BESU KEY PARSE ==="
+
+          for i in 1 2 3 4; do
+            output="$(
+              docker compose run \
+                --rm \
+                --no-deps \
+                "validator${i}" \
+                public-key \
+                export-address \
+                --node-private-key-file=/opt/besu/keys/key \
+                2>&1
+            )"
+
+            address="$(
+              printf '%s\n' "$output" \
+                | grep -E \
+                    '^0x[0-9a-fA-F]{40}$' \
+                | tail -n 1 \
+                || true
+            )"
+
+            if ! [[ "$address" =~ ^0x[0-9a-fA-F]{40}$ ]]; then
+              echo \
+                "ERROR: validator${i} Compose-mounted key parse failed."
+
+              printf '%s\n' "$output" \
+                | tail -40
+
+              exit 1
+            fi
+
+            echo \
+              "validator${i} Compose-mounted key parse: PASS"
+          done
+
+          echo
+          echo "Generated validator material: PASS"
 
       - name: Validate network Compose
         working-directory: network
