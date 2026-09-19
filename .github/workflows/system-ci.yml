@@ -146,43 +146,26 @@ jobs:
           done
 
           echo
-          echo "=== BESU CONTAINER UID/GID ==="
+          echo "=== CI PRIVATE KEY PERMISSIONS ==="
 
-          BESU_UID="$(
-            docker run \
-              --rm \
-              --entrypoint id \
-              hyperledger/besu:26.7.1 \
-              -u
-          )"
-
-          BESU_GID="$(
-            docker run \
-              --rm \
-              --entrypoint id \
-              hyperledger/besu:26.7.1 \
-              -g
-          )"
-
-          echo "GitHub runner UID/GID: $(id -u):$(id -g)"
-          echo "Besu container UID/GID: ${BESU_UID}:${BESU_GID}"
-
-          echo
-          echo "=== PRIVATE KEY PERMISSIONS FOR BESU ==="
-
+          # These keys exist only on the disposable GitHub Actions runner.
+          # Make them readable regardless of the UID Besu's entrypoint
+          # ultimately drops to. Local/operator keys remain mode 0600.
           for i in 1 2 3 4; do
             key="keys/validator${i}/key"
 
-            sudo chown \
-              "${BESU_UID}:${BESU_GID}" \
-              "$key"
+            sudo chmod 644 "$key"
 
-            sudo chmod \
-              600 \
-              "$key"
+            mode="$(
+              stat -c '%a' "$key"
+            )"
 
-            echo \
-              "validator${i} ownership prepared: PASS"
+            if [ "$mode" != "644" ]; then
+              echo "ERROR: validator${i} key mode is ${mode}; expected 644."
+              exit 1
+            fi
+
+            echo "validator${i} CI key readability: PASS"
           done
 
           echo
@@ -193,7 +176,6 @@ jobs:
 
             docker run \
               --rm \
-              --entrypoint besu \
               -v "${key}:/opt/besu/ci-validator-key:ro" \
               hyperledger/besu:26.7.1 \
               --data-path=/tmp/besu-data \
