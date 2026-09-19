@@ -274,6 +274,37 @@ for dir in networkFiles/keys/*/; do
   i=$((i + 1))
 done
 
+echo
+echo "=== Validating generated validator private keys ==="
+
+for i in 1 2 3 4; do
+  KEY_FILE="keys/validator${i}/key"
+
+  if [ ! -f "$KEY_FILE" ]; then
+    echo "ERROR: validator${i} private key is missing."
+    exit 1
+  fi
+
+  KEY_VALUE="$(
+    tr -d '\r\n' \
+      < "$KEY_FILE"
+  )"
+
+  if ! [[ "$KEY_VALUE" =~ ^(0x)?[0-9a-fA-F]{64}$ ]]; then
+    echo "ERROR: validator${i} private key has invalid format."
+    unset KEY_VALUE
+    exit 1
+  fi
+
+  unset KEY_VALUE
+
+  echo "validator${i} private key format: PASS"
+done
+
+echo
+echo "=== Generating validator static peer configuration ==="
+./scripts/generate-static-nodes.sh
+
 PUBKEY="$(
   sed 's/^0x//' \
     keys/validator1/key.pub

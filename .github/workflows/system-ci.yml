@@ -113,6 +113,124 @@ jobs:
           test -s .env
 
 
+
+      - name: Validate generated validator material
+        working-directory: network
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "=== PRIVATE KEY FORMAT ==="
+
+          for i in 1 2 3 4; do
+            key="keys/validator${i}/key"
+
+            test -f "$key"
+
+            value="$(
+              tr -d '\r\n' \
+                < "$key"
+            )"
+
+            if ! [[ "$value" =~ ^(0x)?[0-9a-fA-F]{64}$ ]]; then
+              echo \
+                "ERROR: validator${i} private key format is invalid."
+              unset value
+              exit 1
+            fi
+
+            unset value
+
+            echo \
+              "validator${i} private key format: PASS"
+          done
+
+          echo
+          echo "=== BESU CONTAINER UID/GID ==="
+
+          BESU_UID="$(
+            docker run \
+              --rm \
+              --entrypoint id \
+              hyperledger/besu:26.7.1 \
+              -u
+          )"
+
+          BESU_GID="$(
+            docker run \
+              --rm \
+              --entrypoint id \
+              hyperledger/besu:26.7.1 \
+              -g
+          )"
+
+          echo "GitHub runner UID/GID: $(id -u):$(id -g)"
+          echo "Besu container UID/GID: ${BESU_UID}:${BESU_GID}"
+
+          echo
+          echo "=== PRIVATE KEY PERMISSIONS FOR BESU ==="
+
+          for i in 1 2 3 4; do
+            key="keys/validator${i}/key"
+
+            sudo chown \
+              "${BESU_UID}:${BESU_GID}" \
+              "$key"
+
+            sudo chmod \
+              600 \
+              "$key"
+
+            echo \
+              "validator${i} ownership prepared: PASS"
+          done
+
+          echo
+          echo "=== BESU PRIVATE KEY PARSE TEST ==="
+
+          for i in 1 2 3 4; do
+            key="$(pwd)/keys/validator${i}/key"
+
+            docker run \
+              --rm \
+              --entrypoint besu \
+              -v "${key}:/opt/besu/ci-validator-key:ro" \
+              hyperledger/besu:26.7.1 \
+              --data-path=/tmp/besu-data \
+              --node-private-key-file=/opt/besu/ci-validator-key \
+              public-key \
+              export-address \
+              --to=/tmp/validator-address \
+              >/dev/null
+
+            echo \
+              "validator${i} Besu key parse: PASS"
+          done
+
+          echo
+          echo "=== STATIC NODE FILES ==="
+
+          test "$(
+            jq length \
+              config/static-nodes.json
+          )" -eq 4
+
+          for i in 1 2 3 4; do
+            count="$(
+              jq length \
+                "config/static-nodes-validator${i}.json"
+            )"
+
+            if [ "$count" -ne 3 ]; then
+              echo \
+                "ERROR: validator${i} expected 3 static peers; got ${count}."
+              exit 1
+            fi
+
+            echo \
+              "validator${i} static peers=${count}: PASS"
+          done
+
       - name: Validate network Compose
         working-directory: network
         run: |
