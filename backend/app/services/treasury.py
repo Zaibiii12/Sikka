@@ -231,3 +231,122 @@ def record_verified_deposit(
     db.flush()
 
     return movement, account
+
+
+def reserve_summary(
+    db: Session,
+    *,
+    currency: str = "USD",
+) -> dict:
+    account = get_reserve_account(
+        db,
+        currency=currency,
+    )
+
+    verified = int(
+        account.verified_balance
+    )
+
+    reserved = int(
+        account.reserved_balance
+    )
+
+    available = (
+        verified
+        - reserved
+    )
+
+    return {
+        "currency":
+            account.currency,
+        "source_type":
+            account.source_type,
+        "verified_balance_micro":
+            str(verified),
+        "reserved_balance_micro":
+            str(reserved),
+        "available_balance_micro":
+            str(available),
+        "verified_balance_display":
+            format_micro_units(
+                verified
+            ),
+        "reserved_balance_display":
+            format_micro_units(
+                reserved
+            ),
+        "available_balance_display":
+            format_micro_units(
+                available
+            ),
+        "version":
+            account.version,
+        "updated_at":
+            (
+                account.updated_at.isoformat()
+                if account.updated_at
+                else None
+            ),
+    }
+
+
+def list_fiat_movements(
+    db: Session,
+    *,
+    currency: str = "USD",
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict]:
+    currency = normalize_currency(
+        currency
+    )
+
+    rows = db.scalars(
+        select(FiatMovement)
+        .where(
+            FiatMovement.currency
+            == currency
+        )
+        .order_by(
+            FiatMovement.id.desc()
+        )
+        .limit(limit)
+        .offset(offset)
+    ).all()
+
+    return [
+        {
+            "id": row.id,
+            "reference":
+                row.reference,
+            "movement_type":
+                row.movement_type,
+            "currency":
+                row.currency,
+            "amount_micro":
+                str(
+                    int(row.amount)
+                ),
+            "amount_display":
+                format_micro_units(
+                    row.amount
+                ),
+            "bank_address":
+                row.bank_address,
+            "status":
+                row.status,
+            "external_reference":
+                row.external_reference,
+            "details":
+                row.details,
+            "created_at":
+                row.created_at.isoformat(),
+            "verified_at":
+                (
+                    row.verified_at.isoformat()
+                    if row.verified_at
+                    else None
+                ),
+        }
+        for row in rows
+    ]
