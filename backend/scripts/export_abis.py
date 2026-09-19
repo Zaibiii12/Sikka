@@ -15,6 +15,7 @@ CONTRACTS = [
     "Governance",
     "PaymentProcessor",
     "SettlementEngine",
+    "ReserveController",
 ]
 
 

@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.treasury import (
     SimulatedDepositRequest,
+    TreasuryMintRequest,
 )
 from app.services.treasury import (
     DuplicateReferenceError,
@@ -21,6 +22,21 @@ from app.services.treasury import (
     reserve_summary,
     onchain_reserve_summary,
 )
+
+
+from app.services.treasury_mint import (
+    BankNotEligibleError,
+    DuplicateMintRequestError,
+    InsufficientReserveCapacityError,
+    MintExecutionError,
+    MintWorkflowError,
+    ReserveOutOfSyncError,
+    execute_reserve_backed_mint,
+    get_mint_request,
+    list_mint_requests,
+    serialize_mint_request,
+)
+
 
 
 router = APIRouter(
@@ -190,3 +206,133 @@ def simulated_deposit(
                 "already exists."
             ),
         ) from exc
+
+
+@router.post(
+    "/mint",
+    status_code=201,
+)
+def mint(
+    request: TreasuryMintRequest,
+    db: Session = Depends(get_db),
+) -> dict:
+    try:
+        amount_micro = (
+            parse_amount_to_micro_units(
+                request.amount
+            )
+        )
+
+        row = execute_reserve_backed_mint(
+            db,
+            reference=request.reference,
+            bank_address=
+                request.bank_address,
+            amount_micro=amount_micro,
+            currency=request.currency,
+        )
+
+        return serialize_mint_request(
+            row
+        )
+
+    except DuplicateMintRequestError as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+    except (
+        ReserveOutOfSyncError,
+        InsufficientReserveCapacityError,
+    ) as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+    except BankNotEligibleError as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    except MintExecutionError as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=502,
+            detail=str(exc),
+        ) from exc
+
+    except MintWorkflowError as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+
+@router.get("/mint-requests")
+def mint_requests(
+    limit: int = Query(
+        100,
+        ge=1,
+        le=500,
+    ),
+    offset: int = Query(
+        0,
+        ge=0,
+    ),
+    db: Session = Depends(get_db),
+) -> dict:
+    rows = list_mint_requests(
+        db,
+        limit=limit,
+        offset=offset,
+    )
+
+    return {
+        "count": len(rows),
+        "limit": limit,
+        "offset": offset,
+        "items": [
+            serialize_mint_request(
+                row
+            )
+            for row in rows
+        ],
+    }
+
+
+@router.get(
+    "/mint-requests/{request_id}"
+)
+def mint_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+) -> dict:
+    row = get_mint_request(
+        db,
+        request_id=request_id,
+    )
+
+    if row is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Mint request not found."
+            ),
+        )
+
+    return serialize_mint_request(
+        row
+    )
+
