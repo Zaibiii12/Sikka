@@ -48,23 +48,6 @@ def allowance(
         ) from exc
 
 
-@router.post("/admin/burn")
-def burn(
-    request: TokenAccountAmountRequest,
-) -> dict:
-    try:
-        return TokenService().burn(
-            request.address,
-            request.amount,
-        )
-
-    except Exception as exc:
-        raise HTTPException(
-            status_code=400,
-            detail=str(exc),
-        ) from exc
-
-
 @router.post("/admin/freeze")
 def freeze(
     request: TokenAccountRequest,

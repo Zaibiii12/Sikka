@@ -49,3 +49,25 @@ class TreasuryMintRequest(BaseModel):
         min_length=3,
         max_length=3,
     )
+
+
+class TreasuryRedemptionRequest(BaseModel):
+    reference: str = Field(
+        min_length=1,
+        max_length=100,
+    )
+
+    bank_address: str = Field(
+        pattern=r"^0x[a-fA-F0-9]{40}$",
+    )
+
+    amount: str = Field(
+        min_length=1,
+        max_length=100,
+    )
+
+    currency: str = Field(
+        default="USD",
+        min_length=3,
+        max_length=3,
+    )

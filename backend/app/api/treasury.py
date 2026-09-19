@@ -11,6 +11,7 @@ from app.db.session import get_db
 from app.models.treasury import (
     SimulatedDepositRequest,
     TreasuryMintRequest,
+    TreasuryRedemptionRequest,
 )
 from app.services.treasury import (
     DuplicateReferenceError,
@@ -35,6 +36,23 @@ from app.services.treasury_mint import (
     get_mint_request,
     list_mint_requests,
     serialize_mint_request,
+)
+
+
+
+from app.services.treasury_redemption import (
+    DuplicateRedemptionError,
+    InsufficientFiatReserveError,
+    InsufficientSikkaBalanceError,
+    RedemptionBankError,
+    RedemptionExecutionError,
+    RedemptionPostBurnError,
+    RedemptionReserveOutOfSyncError,
+    RedemptionWorkflowError,
+    execute_redemption,
+    get_redemption,
+    list_redemptions,
+    serialize_redemption,
 )
 
 
@@ -333,5 +351,144 @@ def mint_request(
         )
 
     return serialize_mint_request(
+        row
+    )
+
+
+@router.post(
+    "/redeem",
+    status_code=201,
+)
+def redeem(
+    request: TreasuryRedemptionRequest,
+    db: Session = Depends(get_db),
+) -> dict:
+    try:
+        amount_micro = (
+            parse_amount_to_micro_units(
+                request.amount
+            )
+        )
+
+        row = execute_redemption(
+            db,
+            reference=request.reference,
+            bank_address=
+                request.bank_address,
+            amount_micro=amount_micro,
+            currency=request.currency,
+        )
+
+        return serialize_redemption(
+            row
+        )
+
+    except DuplicateRedemptionError as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+    except (
+        InsufficientFiatReserveError,
+        InsufficientSikkaBalanceError,
+        RedemptionReserveOutOfSyncError,
+    ) as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+    except RedemptionBankError as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    except RedemptionPostBurnError as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=502,
+            detail=str(exc),
+        ) from exc
+
+    except RedemptionExecutionError as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=502,
+            detail=str(exc),
+        ) from exc
+
+    except RedemptionWorkflowError as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+
+@router.get("/redemptions")
+def redemptions(
+    limit: int = Query(
+        100,
+        ge=1,
+        le=500,
+    ),
+    offset: int = Query(
+        0,
+        ge=0,
+    ),
+    db: Session = Depends(get_db),
+) -> dict:
+    rows = list_redemptions(
+        db,
+        limit=limit,
+        offset=offset,
+    )
+
+    return {
+        "count": len(rows),
+        "limit": limit,
+        "offset": offset,
+        "items": [
+            serialize_redemption(
+                row
+            )
+            for row in rows
+        ],
+    }
+
+
+@router.get(
+    "/redemptions/{request_id}"
+)
+def redemption(
+    request_id: str,
+    db: Session = Depends(get_db),
+) -> dict:
+    row = get_redemption(
+        db,
+        request_id=request_id,
+    )
+
+    if row is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Redemption request "
+                "not found."
+            ),
+        )
+
+    return serialize_redemption(
         row
     )
