@@ -17,3 +17,5 @@ metrics-enabled=true
 metrics-host="0.0.0.0"
 
 min-gas-price=0
+
+static-nodes-file="/opt/besu/static-nodes.json"

@@ -32,3 +32,4 @@ backend/dev-keys/
 backend/.env.db
 ops/monitoring/.env
 ops/monitoring/.postgres-exporter.env
+backups/
