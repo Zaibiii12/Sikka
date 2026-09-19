@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.contracts import get_contracts
 from app.db.models import (
     FiatMovement,
     ReserveAccount,
@@ -350,3 +351,76 @@ def list_fiat_movements(
         }
         for row in rows
     ]
+
+
+def onchain_reserve_summary() -> dict:
+    contracts = get_contracts()
+
+    controller = (
+        contracts.reserve_controller
+    )
+
+    token = contracts.private_usd
+
+    verified = int(
+        controller.functions
+        .verifiedReserve()
+        .call()
+    )
+
+    capacity = int(
+        controller.functions
+        .availableMintCapacity()
+        .call()
+    )
+
+    deficit = int(
+        controller.functions
+        .reserveDeficit()
+        .call()
+    )
+
+    supply = int(
+        token.functions
+        .totalSupply()
+        .call()
+    )
+
+    return {
+        "controller_address":
+            controller.address,
+        "verified_reserve_micro":
+            str(verified),
+        "total_supply_micro":
+            str(supply),
+        "available_mint_capacity_micro":
+            str(capacity),
+        "reserve_deficit_micro":
+            str(deficit),
+        "verified_reserve_display":
+            format_micro_units(
+                verified
+            ),
+        "total_supply_display":
+            format_micro_units(
+                supply
+            ),
+        "available_mint_capacity_display":
+            format_micro_units(
+                capacity
+            ),
+        "reserve_deficit_display":
+            format_micro_units(
+                deficit
+            ),
+        "reserve_attestor":
+            controller.functions
+            .reserveAttestor()
+            .call(),
+        "treasury_operator":
+            controller.functions
+            .treasuryOperator()
+            .call(),
+        "fully_backed":
+            deficit == 0,
+    }

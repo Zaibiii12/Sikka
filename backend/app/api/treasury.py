@@ -19,6 +19,7 @@ from app.services.treasury import (
     parse_amount_to_micro_units,
     record_verified_deposit,
     reserve_summary,
+    onchain_reserve_summary,
 )
 
 
@@ -46,6 +47,18 @@ def reserve(
     except ReserveNotFoundError as exc:
         raise HTTPException(
             status_code=404,
+            detail=str(exc),
+        ) from exc
+
+
+@router.get("/onchain")
+def onchain() -> dict:
+    try:
+        return onchain_reserve_summary()
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
             detail=str(exc),
         ) from exc
 

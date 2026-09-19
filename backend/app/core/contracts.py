@@ -54,6 +54,7 @@ class Contracts:
     payment_processor: Contract
     settlement_engine: Contract
     governance: Contract
+    reserve_controller: Contract
 
 
 @lru_cache
@@ -84,5 +85,9 @@ def get_contracts() -> Contracts:
         governance=create_contract(
             "Governance",
             settings.governance_address,
+        ),
+        reserve_controller=create_contract(
+            "ReserveController",
+            settings.reserve_controller_address,
         ),
     )

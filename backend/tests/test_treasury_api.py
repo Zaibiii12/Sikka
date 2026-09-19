@@ -193,3 +193,40 @@ def test_list_movements():
         ]
         == TEST_REFERENCE
     )
+
+
+def test_onchain_reserve_route(
+    monkeypatch,
+):
+    import app.api.treasury as treasury_api
+
+    expected = {
+        "controller_address":
+            "0x0000000000000000000000000000000000000001",
+        "verified_reserve_micro":
+            "100000000000",
+        "total_supply_micro":
+            "2001000000",
+        "available_mint_capacity_micro":
+            "97999000000",
+        "reserve_deficit_micro":
+            "0",
+        "fully_backed":
+            True,
+    }
+
+    monkeypatch.setattr(
+        treasury_api,
+        "onchain_reserve_summary",
+        lambda: expected,
+    )
+
+    response = client.get(
+        (
+            f"{settings.api_prefix}"
+            "/treasury/onchain"
+        )
+    )
+
+    assert response.status_code == 200
+    assert response.json() == expected
