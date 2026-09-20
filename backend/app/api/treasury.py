@@ -57,6 +57,17 @@ from app.services.treasury_redemption import (
 
 
 
+from app.services.treasury_reconciliation import (
+    ReconciliationError,
+    current_reconciliation,
+    list_reconciliations,
+    record_reconciliation,
+    serialize_reconciliation,
+    treasury_exceptions,
+)
+
+
+
 router = APIRouter(
     prefix="/treasury",
     tags=["treasury"],
@@ -492,3 +503,116 @@ def redemption(
     return serialize_redemption(
         row
     )
+
+
+@router.get("/reconciliation")
+def reconciliation(
+    currency: str = Query(
+        "USD",
+        min_length=3,
+        max_length=3,
+    ),
+    db: Session = Depends(get_db),
+) -> dict:
+    try:
+        return current_reconciliation(
+            db,
+            currency=currency,
+        )
+
+    except ReconciliationError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+
+@router.post("/reconcile")
+def reconcile(
+    currency: str = Query(
+        "USD",
+        min_length=3,
+        max_length=3,
+    ),
+    db: Session = Depends(get_db),
+) -> dict:
+    try:
+        row = record_reconciliation(
+            db,
+            currency=currency,
+        )
+
+        return serialize_reconciliation(
+            row
+        )
+
+    except ReconciliationError as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+
+@router.get(
+    "/reconciliation/history"
+)
+def reconciliation_history(
+    limit: int = Query(
+        100,
+        ge=1,
+        le=500,
+    ),
+    offset: int = Query(
+        0,
+        ge=0,
+    ),
+    db: Session = Depends(get_db),
+) -> dict:
+    rows = list_reconciliations(
+        db,
+        limit=limit,
+        offset=offset,
+    )
+
+    return {
+        "count": len(rows),
+        "limit": limit,
+        "offset": offset,
+        "items": [
+            serialize_reconciliation(
+                row
+            )
+            for row in rows
+        ],
+    }
+
+
+@router.get("/exceptions")
+def exceptions(
+    currency: str = Query(
+        "USD",
+        min_length=3,
+        max_length=3,
+    ),
+    stale_minutes: int = Query(
+        5,
+        ge=1,
+        le=1440,
+    ),
+    db: Session = Depends(get_db),
+) -> dict:
+    try:
+        return treasury_exceptions(
+            db,
+            currency=currency,
+            stale_minutes=
+                stale_minutes,
+        )
+
+    except ReconciliationError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
