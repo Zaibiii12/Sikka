@@ -12,6 +12,7 @@ from app.api import (
     settlements,
     token,
     transactions,
+    treasury,
 )
 from app.core.config import get_settings
 from app.observability.metrics import install_metrics
@@ -115,6 +116,11 @@ app.include_router(
 
 app.include_router(
     indexer.router,
+    prefix=settings.api_prefix,
+)
+
+app.include_router(
+    treasury.router,
     prefix=settings.api_prefix,
 )
 

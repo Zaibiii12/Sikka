@@ -68,16 +68,10 @@ class TokenService:
         address: str,
         amount: int,
     ) -> dict:
-        address = checksum_address(address)
-
-        return TransactionSender(
-            self.settings.minter_private_key,
-            "MINTER_PRIVATE_KEY",
-        ).send(
-            self.contract.functions.mint(
-                address,
-                amount,
-            )
+        raise RuntimeError(
+            "Direct SIKKA minting is disabled. "
+            "Use the reserve-backed treasury "
+            "mint workflow instead."
         )
 
     def burn(
@@ -85,16 +79,10 @@ class TokenService:
         address: str,
         amount: int,
     ) -> dict:
-        address = checksum_address(address)
-
-        return TransactionSender(
-            self.settings.burner_private_key,
-            "BURNER_PRIVATE_KEY",
-        ).send(
-            self.contract.functions.burn(
-                address,
-                amount,
-            )
+        raise RuntimeError(
+            "Direct SIKKA burning is disabled. "
+            "Use the treasury redemption "
+            "workflow instead."
         )
 
     def freeze(self, address: str) -> dict:

@@ -57,6 +57,28 @@ jobs:
     name: Backend Unit
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+
+        env:
+          POSTGRES_USER: blocksikka
+          POSTGRES_PASSWORD: blocksikka_ci_password
+          POSTGRES_DB: blocksikka
+
+        ports:
+          - 5432:5432
+
+        options: >-
+          --health-cmd "pg_isready -U blocksikka -d blocksikka"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      APP_ENV: ci
+      DATABASE_URL: postgresql+psycopg://blocksikka:blocksikka_ci_password@127.0.0.1:5432/blocksikka
+
     defaults:
       run:
         working-directory: backend
@@ -81,12 +103,40 @@ jobs:
         run: |
           python -m compileall -q app scripts tests
 
-      - name: Run service-independent tests
+      - name: Apply migrations
+        run: alembic upgrade head
+
+      - name: Seed CI treasury reserve
         run: |
-          pytest -q \
-            tests \
-            --ignore=tests/test_database_connection.py \
-            --ignore=tests/test_qbft_web3.py
+          PYTHONPATH=. python - <<'PYEOF'
+          from decimal import Decimal
+
+          from app.db.session import SessionLocal
+          from app.services.treasury import initialize_reserve_account
+
+          with SessionLocal() as db:
+              account = initialize_reserve_account(
+                  db,
+                  currency="USD",
+              )
+
+              account.verified_balance = Decimal(
+                  "100000000000"
+              )
+
+              account.reserved_balance = Decimal("0")
+
+              db.commit()
+
+              print(
+                  "CI USD reserve seeded:",
+                  int(account.verified_balance),
+              )
+          PYEOF
+
+      - name: Run backend tests
+        run: |
+          pytest -q             tests             --ignore=tests/test_qbft_web3.py
 
 
   backend-postgres:

@@ -33,3 +33,5 @@ backend/.env.db
 ops/monitoring/.env
 ops/monitoring/.postgres-exporter.env
 backups/
+
+*:Zone.Identifier

@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     payment_processor_address: str = ""
     settlement_engine_address: str = ""
     governance_address: str = ""
+    reserve_controller_address: str = ""
 
     bank_admin_private_key: str = ""
     minter_private_key: str = ""
@@ -36,6 +37,7 @@ class Settings(BaseSettings):
     pauser_private_key: str = ""
     settlement_private_key: str = ""
     relayer_private_key: str = ""
+    treasury_private_key: str = ""
 
     cors_origins: str = (
         "http://localhost:5173,"
