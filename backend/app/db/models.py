@@ -780,3 +780,11 @@ class ReserveReconciliation(Base):
         server_default=func.now(),
         nullable=False,
     )
+
+
+# Register the independent mock-bank ledger
+# with SQLAlchemy Base.metadata.
+from app.db.bank_models import (
+    BankAccountRecord,
+    BankTransactionRecord,
+)  # noqa: E402,F401
