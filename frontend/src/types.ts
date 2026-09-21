@@ -138,3 +138,135 @@ export interface ListResponse<T> {
   offset?: number;
   items: T[];
 }
+
+
+export interface TreasuryReserve {
+  currency: string;
+  source_type: string;
+  verified_balance_micro: string;
+  reserved_balance_micro: string;
+  available_balance_micro: string;
+  verified_balance_display: string;
+  reserved_balance_display: string;
+  available_balance_display: string;
+  version: number;
+  updated_at: string;
+}
+
+
+export interface TreasuryOnchain {
+  controller_address: string;
+  verified_reserve_micro: string;
+  total_supply_micro: string;
+  available_mint_capacity_micro: string;
+  reserve_deficit_micro: string;
+  verified_reserve_display: string;
+  total_supply_display: string;
+  available_mint_capacity_display: string;
+  reserve_deficit_display: string;
+  reserve_attestor: string;
+  treasury_operator: string;
+  fully_backed: boolean;
+}
+
+
+export interface TreasuryMintRequest {
+  request_id: string;
+  bank_address: string;
+  currency: string;
+  amount_micro: string;
+  amount_display: string;
+  status: string;
+  reserve_movement_id: number | null;
+  transaction_hash: string | null;
+  block_number: number | null;
+  failure_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+
+export interface TreasuryMintRequestList {
+  count: number;
+  limit: number;
+  offset: number;
+  items: TreasuryMintRequest[];
+}
+
+
+export interface TreasuryRedemption {
+  request_id: string;
+  bank_address: string;
+  currency: string;
+  amount_micro: string;
+  amount_display: string;
+  status: string;
+  payout_movement_id: number | null;
+  transaction_hash: string | null;
+  block_number: number | null;
+  failure_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+
+export interface TreasuryRedemptionList {
+  count: number;
+  limit: number;
+  offset: number;
+  items: TreasuryRedemption[];
+}
+
+
+export interface TreasuryReconciliation {
+  currency: string;
+  database_verified_reserve_micro: string;
+  database_reserved_micro: string;
+  onchain_verified_reserve_micro: string;
+  total_supply_micro: string;
+  available_mint_capacity_micro: string;
+  reserve_deficit_micro: string;
+  reserve_difference_micro: string;
+  database_verified_reserve_display: string;
+  onchain_verified_reserve_display: string;
+  total_supply_display: string;
+  reserve_difference_display: string;
+  reserve_matches: boolean;
+  fully_backed: boolean;
+  clean: boolean;
+}
+
+
+export interface TreasuryExceptionReport {
+  currency: string;
+  checked_at: string;
+  stale_minutes: number;
+  clean: boolean;
+  exception_count: number;
+  exceptions: Record<string, unknown>[];
+  reconciliation: TreasuryReconciliation;
+}
+
+
+export interface TreasuryRecoveryMintItem {
+  request_id: string;
+  status: string;
+  transaction_hash: string | null;
+}
+
+
+export interface TreasuryRecoveryRedemptionItem {
+  request_id: string;
+  status: string;
+  transaction_hash: string | null;
+  payout_movement_id: number | null;
+}
+
+
+export interface TreasuryRecoveryStatus {
+  mint_unresolved: number;
+  redemption_unresolved: number;
+  total_unresolved: number;
+  mint_requests: TreasuryRecoveryMintItem[];
+  redemption_requests: TreasuryRecoveryRedemptionItem[];
+}

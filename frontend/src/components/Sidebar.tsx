@@ -3,6 +3,7 @@ export type AppView =
   | "payments"
   | "settlements"
   | "institutions"
+  | "treasury"
   | "network";
 
 interface SidebarProps {
@@ -37,6 +38,11 @@ const navItems: {
     id: "institutions",
     label: "Institutions",
     caption: "Bank registry",
+  },
+  {
+    id: "treasury",
+    label: "Treasury",
+    caption: "Reserve control",
   },
   {
     id: "network",
