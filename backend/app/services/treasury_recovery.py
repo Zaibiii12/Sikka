@@ -10,6 +10,7 @@ from web3.exceptions import TransactionNotFound
 from app.core.contracts import get_contracts
 from app.core.web3_client import require_web3
 from app.db.models import (
+    FiatMovement,
     MintRequest,
     RedemptionRequest,
     ReserveAccount,
@@ -90,6 +91,559 @@ def _burn_receipt_matches(
             return True
 
     return False
+
+
+def _payout_reference(
+    request_id: str,
+) -> str:
+    return (
+        "PAYOUT-"
+        + request_id.removeprefix("0x")
+    )
+
+
+def _read_reserve_recovery_state(
+    attestation_id: str,
+) -> dict:
+    value = attestation_id.removeprefix(
+        "0x"
+    )
+
+    try:
+        attestation_bytes = bytes.fromhex(
+            value
+        )
+    except ValueError as exc:
+        raise RecoveryError(
+            "Invalid reserve attestation ID."
+        ) from exc
+
+    if len(attestation_bytes) != 32:
+        raise RecoveryError(
+            "Reserve attestation ID must "
+            "contain 32 bytes."
+        )
+
+    controller = (
+        get_contracts()
+        .reserve_controller
+    )
+
+    return {
+        "attestation_used":
+            bool(
+                controller
+                .functions
+                .isAttestationUsed(
+                    attestation_bytes
+                )
+                .call()
+            ),
+
+        "verified_reserve":
+            int(
+                controller
+                .functions
+                .verifiedReserve()
+                .call()
+            ),
+    }
+
+
+def _finalize_recovered_payout(
+    db: Session,
+    *,
+    row: RedemptionRequest,
+    account: ReserveAccount,
+) -> dict:
+    amount = int(row.amount)
+    target = int(row.reserve_target)
+
+    current_verified = int(
+        account.verified_balance
+    )
+
+    current_reserved = int(
+        account.reserved_balance
+    )
+
+    if current_verified != (
+        target + amount
+    ):
+        raise RecoveryError(
+            "Database reserve is not at "
+            "the expected pre-payout value."
+        )
+
+    if current_reserved < amount:
+        raise RecoveryError(
+            "Reserved fiat is smaller than "
+            "the redemption amount."
+        )
+
+    reference = _payout_reference(
+        row.request_id
+    )
+
+    existing = db.scalar(
+        select(FiatMovement)
+        .where(
+            FiatMovement.reference
+            == reference
+        )
+    )
+
+    if existing is not None:
+        raise RecoveryError(
+            "Recovered payout already exists."
+        )
+
+    now = _now()
+
+    movement = FiatMovement(
+        reference=reference,
+        movement_type="WITHDRAWAL",
+        currency=row.currency,
+        amount=Decimal(amount),
+        bank_address=row.bank_address,
+        status="VERIFIED",
+        external_reference=
+            row.request_id,
+        details={
+            "source":
+                "SIMULATED_BANK_PAYOUT_RECOVERY",
+
+            "redemption_request_id":
+                row.request_id,
+
+            "reserve_attestation_id":
+                row.reserve_attestation_id,
+
+            "reserve_attestation_tx":
+                (
+                    row
+                    .reserve_attestation_transaction_hash
+                ),
+
+            "reserve_attestation_block":
+                (
+                    row
+                    .reserve_attestation_block_number
+                ),
+
+            "reserve_target":
+                str(
+                    row.reserve_target
+                ),
+        },
+        verified_at=now,
+    )
+
+    account.verified_balance = Decimal(
+        target
+    )
+
+    account.reserved_balance = Decimal(
+        current_reserved - amount
+    )
+
+    account.version += 1
+
+    db.add(movement)
+    db.flush()
+
+    row.payout_movement_id = movement.id
+    row.status = "COMPLETED"
+    row.failure_reason = None
+    row.updated_at = now
+
+    db.flush()
+
+    return {
+        "request_id":
+            row.request_id,
+
+        "type":
+            "REDEMPTION",
+
+        "status":
+            row.status,
+
+        "action":
+            "FINALIZED_PAYOUT",
+
+        "payout_movement_id":
+            row.payout_movement_id,
+    }
+
+
+def _recover_burned_redemption(
+    db: Session,
+    row: RedemptionRequest,
+) -> dict:
+    if (
+        row.reserve_target is None
+        or not row.reserve_attestation_id
+    ):
+        return {
+            "request_id":
+                row.request_id,
+            "type":
+                "REDEMPTION",
+            "status":
+                row.status,
+            "action":
+                "MANUAL_REVIEW",
+            "detail":
+                (
+                    "BURNED redemption lacks "
+                    "persisted reserve recovery "
+                    "metadata."
+                ),
+        }
+
+    if row.payout_movement_id is not None:
+        return {
+            "request_id":
+                row.request_id,
+            "type":
+                "REDEMPTION",
+            "status":
+                row.status,
+            "action":
+                "MANUAL_REVIEW",
+            "detail":
+                (
+                    "BURNED redemption already "
+                    "references a payout movement."
+                ),
+        }
+
+    payout_reference = (
+        _payout_reference(
+            row.request_id
+        )
+    )
+
+    existing_payout = db.scalar(
+        select(FiatMovement)
+        .where(
+            FiatMovement.reference
+            == payout_reference
+        )
+    )
+
+    if existing_payout is not None:
+        return {
+            "request_id":
+                row.request_id,
+            "type":
+                "REDEMPTION",
+            "status":
+                row.status,
+            "action":
+                "MANUAL_REVIEW",
+            "detail":
+                (
+                    "A fiat payout already exists "
+                    "for this BURNED redemption."
+                ),
+        }
+
+    account = db.scalar(
+        select(ReserveAccount)
+        .where(
+            ReserveAccount.currency
+            == row.currency
+        )
+        .with_for_update()
+    )
+
+    if account is None:
+        return {
+            "request_id":
+                row.request_id,
+            "type":
+                "REDEMPTION",
+            "status":
+                row.status,
+            "action":
+                "MANUAL_REVIEW",
+            "detail":
+                "Reserve account does not exist.",
+        }
+
+    amount = int(row.amount)
+    target = int(row.reserve_target)
+
+    database_reserve = int(
+        account.verified_balance
+    )
+
+    expected_pre_payout = (
+        target + amount
+    )
+
+    if (
+        database_reserve
+        != expected_pre_payout
+    ):
+        return {
+            "request_id":
+                row.request_id,
+            "type":
+                "REDEMPTION",
+            "status":
+                row.status,
+            "action":
+                "MANUAL_REVIEW",
+            "detail":
+                (
+                    "Database reserve does not "
+                    "match the expected pre-payout "
+                    "reserve."
+                ),
+        }
+
+    if (
+        int(account.reserved_balance)
+        < amount
+    ):
+        return {
+            "request_id":
+                row.request_id,
+            "type":
+                "REDEMPTION",
+            "status":
+                row.status,
+            "action":
+                "MANUAL_REVIEW",
+            "detail":
+                (
+                    "Reserved fiat is smaller "
+                    "than redemption amount."
+                ),
+        }
+
+    chain = (
+        _read_reserve_recovery_state(
+            row.reserve_attestation_id
+        )
+    )
+
+    attestation_used = bool(
+        chain["attestation_used"]
+    )
+
+    chain_reserve = int(
+        chain["verified_reserve"]
+    )
+
+    if attestation_used:
+        if chain_reserve != target:
+            return {
+                "request_id":
+                    row.request_id,
+                "type":
+                    "REDEMPTION",
+                "status":
+                    row.status,
+                "action":
+                    "MANUAL_REVIEW",
+                "detail":
+                    (
+                        "Attestation is used but "
+                        "on-chain reserve does not "
+                        "equal the persisted target."
+                    ),
+            }
+
+        if (
+            row
+            .reserve_attestation_transaction_hash
+        ):
+            receipt = _get_receipt(
+                row
+                .reserve_attestation_transaction_hash
+            )
+
+            if receipt is not None:
+                if int(
+                    receipt["status"]
+                ) != 1:
+                    return {
+                        "request_id":
+                            row.request_id,
+                        "type":
+                            "REDEMPTION",
+                        "status":
+                            row.status,
+                        "action":
+                            "MANUAL_REVIEW",
+                        "detail":
+                            (
+                                "Attestation is used "
+                                "but persisted receipt "
+                                "reports failure."
+                            ),
+                    }
+
+                row.reserve_attestation_block_number = (
+                    int(
+                        receipt[
+                            "blockNumber"
+                        ]
+                    )
+                )
+
+        return (
+            _finalize_recovered_payout(
+                db,
+                row=row,
+                account=account,
+            )
+        )
+
+    # Our deterministic attestation has not
+    # been consumed yet.
+    if chain_reserve != database_reserve:
+        return {
+            "request_id":
+                row.request_id,
+            "type":
+                "REDEMPTION",
+            "status":
+                row.status,
+            "action":
+                "MANUAL_REVIEW",
+            "detail":
+                (
+                    "Attestation is unused but "
+                    "on-chain reserve already "
+                    "differs from database reserve."
+                ),
+        }
+
+    tx_hash = (
+        row
+        .reserve_attestation_transaction_hash
+    )
+
+    if not tx_hash:
+        # We cannot distinguish:
+        #
+        # 1. crash before blockchain submission
+        # 2. crash after submission but before
+        #    transaction hash persistence
+        #
+        # Never submit another transaction here.
+        return {
+            "request_id":
+                row.request_id,
+            "type":
+                "REDEMPTION",
+            "status":
+                row.status,
+            "action":
+                "MANUAL_REVIEW",
+            "detail":
+                (
+                    "Attestation is unused and "
+                    "no transaction hash is "
+                    "persisted. Automatic retry "
+                    "would risk duplicate "
+                    "submission."
+                ),
+        }
+
+    receipt = _get_receipt(
+        tx_hash
+    )
+
+    if receipt is None:
+        return {
+            "request_id":
+                row.request_id,
+            "type":
+                "REDEMPTION",
+            "status":
+                row.status,
+            "action":
+                "WAITING",
+            "detail":
+                (
+                    "Reserve attestation "
+                    "transaction is still "
+                    "unconfirmed."
+                ),
+        }
+
+    if int(receipt["status"]) != 1:
+        return {
+            "request_id":
+                row.request_id,
+            "type":
+                "REDEMPTION",
+            "status":
+                row.status,
+            "action":
+                "MANUAL_REVIEW",
+            "detail":
+                (
+                    "Reserve attestation "
+                    "transaction failed. "
+                    "Explicit operator retry "
+                    "is required."
+                ),
+        }
+
+    # Receipt says success. Re-read contract
+    # state rather than trusting the receipt
+    # alone.
+    chain = (
+        _read_reserve_recovery_state(
+            row.reserve_attestation_id
+        )
+    )
+
+    if (
+        not chain["attestation_used"]
+        or int(
+            chain["verified_reserve"]
+        )
+        != target
+    ):
+        return {
+            "request_id":
+                row.request_id,
+            "type":
+                "REDEMPTION",
+            "status":
+                row.status,
+            "action":
+                "MANUAL_REVIEW",
+            "detail":
+                (
+                    "Reserve transaction receipt "
+                    "succeeded but contract state "
+                    "does not prove the expected "
+                    "attestation."
+                ),
+        }
+
+    row.reserve_attestation_block_number = (
+        int(
+            receipt["blockNumber"]
+        )
+    )
+
+    return (
+        _finalize_recovered_payout(
+            db,
+            row=row,
+            account=account,
+        )
+    )
 
 
 def _release_reservation(
@@ -318,22 +872,10 @@ def recover_redemption_request(
         }
 
     if row.status == "BURNED":
-        return {
-            "request_id":
-                row.request_id,
-            "type":
-                "REDEMPTION",
-            "status":
-                row.status,
-            "action":
-                "MANUAL_REVIEW",
-            "detail":
-                (
-                    "SIKKA is already burned. "
-                    "Post-burn reserve/payout recovery "
-                    "must not reburn tokens."
-                ),
-        }
+        return _recover_burned_redemption(
+            db,
+            row,
+        )
 
     if row.status != "BURN_SUBMITTED":
         return {

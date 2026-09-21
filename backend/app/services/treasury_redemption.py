@@ -592,15 +592,32 @@ def execute_redemption(
 
     db.commit()
 
-    # Burn succeeded. It is now safe to
-    # lower reserve backing. First lower
-    # the on-chain attestation. If this
-    # fails, fiat remains reserved and
-    # no simulated payout occurs.
+    # Burn succeeded. From this point onward,
+    # never burn SIKKA again for this request.
+    #
+    # Persist the target reserve and deterministic
+    # attestation identifier before submitting the
+    # reserve transaction. This gives crash recovery
+    # durable evidence about what was intended.
     account = db.get(
         ReserveAccount,
         row.currency,
     )
+
+    if account is None:
+        row.failure_reason = (
+            "Burn completed, but reserve "
+            "account does not exist."
+        )
+        row.updated_at = datetime.now(
+            timezone.utc
+        )
+
+        db.commit()
+
+        raise RedemptionPostBurnError(
+            row.failure_reason
+        )
 
     target_reserve = (
         int(
@@ -614,6 +631,9 @@ def execute_redemption(
             "Burn completed, but reserve "
             "would become negative."
         )
+        row.updated_at = datetime.now(
+            timezone.utc
+        )
 
         db.commit()
 
@@ -621,16 +641,40 @@ def execute_redemption(
             row.failure_reason
         )
 
-    attestation_id = (
-        _attestation_id(
-            request_id=row.request_id,
-            reserve_amount=
-                target_reserve,
+    attestation_id = _attestation_id(
+        request_id=row.request_id,
+        reserve_amount=target_reserve,
+    )
+
+    row.reserve_target = Decimal(
+        target_reserve
+    )
+
+    row.reserve_attestation_id = (
+        Web3.to_hex(
+            attestation_id
         )
     )
 
+    row.reserve_attestation_transaction_hash = (
+        None
+    )
+
+    row.reserve_attestation_block_number = (
+        None
+    )
+
+    row.failure_reason = None
+    row.updated_at = datetime.now(
+        timezone.utc
+    )
+
+    # Critical recovery checkpoint:
+    # intent is durable before the external call.
+    db.commit()
+
     try:
-        attestation = TransactionSender(
+        submission = TransactionSender(
             settings.treasury_private_key,
             "TREASURY_PRIVATE_KEY",
         ).send(
@@ -639,7 +683,8 @@ def execute_redemption(
             .attestReserve(
                 target_reserve,
                 attestation_id,
-            )
+            ),
+            wait=False,
         )
 
     except Exception as exc:
@@ -649,9 +694,10 @@ def execute_redemption(
         )
 
         row.status = "BURNED"
+
         row.failure_reason = (
             "Burn completed but reserve "
-            "attestation failed: "
+            "attestation submission failed: "
             f"{str(exc)[:400]}"
         )
 
@@ -663,9 +709,110 @@ def execute_redemption(
 
         raise RedemptionPostBurnError(
             "Burn completed but reserve "
-            "attestation failed. "
+            "attestation submission failed. "
             "Fiat payout has not occurred."
         ) from exc
+
+    row = db.get(
+        RedemptionRequest,
+        row.request_id,
+    )
+
+    row.reserve_attestation_transaction_hash = (
+        submission[
+            "transaction_hash"
+        ]
+    )
+
+    row.updated_at = datetime.now(
+        timezone.utc
+    )
+
+    # Second recovery checkpoint:
+    # blockchain submission hash is durable
+    # before waiting for confirmation.
+    db.commit()
+
+    try:
+        w3 = require_web3()
+
+        reserve_receipt = (
+            w3.eth
+            .wait_for_transaction_receipt(
+                row
+                .reserve_attestation_transaction_hash,
+                timeout=120,
+                poll_latency=1,
+            )
+        )
+
+    except Exception:
+        row = db.get(
+            RedemptionRequest,
+            row.request_id,
+        )
+
+        row.status = "BURNED"
+
+        row.failure_reason = (
+            "Burn completed and reserve "
+            "attestation was submitted, but "
+            "its receipt is not confirmed yet."
+        )
+
+        row.updated_at = datetime.now(
+            timezone.utc
+        )
+
+        db.commit()
+
+        # Ambiguous chain state. Do not payout
+        # and do not submit another attestation.
+        return row
+
+    row = db.get(
+        RedemptionRequest,
+        row.request_id,
+    )
+
+    if int(
+        reserve_receipt["status"]
+    ) != 1:
+        row.status = "BURNED"
+
+        row.failure_reason = (
+            "Burn completed but reserve "
+            "attestation transaction failed."
+        )
+
+        row.updated_at = datetime.now(
+            timezone.utc
+        )
+
+        db.commit()
+
+        raise RedemptionPostBurnError(
+            row.failure_reason
+        )
+
+    row.reserve_attestation_block_number = (
+        int(
+            reserve_receipt[
+                "blockNumber"
+            ]
+        )
+    )
+
+    row.failure_reason = None
+
+    row.updated_at = datetime.now(
+        timezone.utc
+    )
+
+    # Third recovery checkpoint:
+    # attestation confirmation is durable
+    # before fiat accounting begins.
+    db.commit()
 
     # Finalize the simulated fiat payout.
     # At this point token supply and the
@@ -728,13 +875,21 @@ def execute_redemption(
             "redemption_request_id":
                 row.request_id,
             "reserve_attestation_id":
-                Web3.to_hex(
-                    attestation_id
-                ),
+                row.reserve_attestation_id,
             "reserve_attestation_tx":
-                attestation[
-                    "transaction_hash"
-                ],
+                (
+                    row
+                    .reserve_attestation_transaction_hash
+                ),
+            "reserve_attestation_block":
+                (
+                    row
+                    .reserve_attestation_block_number
+                ),
+            "reserve_target":
+                str(
+                    row.reserve_target
+                ),
         },
         verified_at=now,
     )

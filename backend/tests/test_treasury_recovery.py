@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 import app.services.treasury_recovery as recovery
 from app.db.models import (
+    FiatMovement,
     MintRequest,
     RedemptionRequest,
     ReserveAccount,
@@ -473,3 +474,320 @@ def test_recovery_status_counts_unresolved_rows(
     )
 
     assert result["total_unresolved"] >= 2
+
+
+def test_burned_redemption_with_used_attestation_finalizes_payout(
+    db,
+    monkeypatch,
+):
+    account, original_reserved = (
+        _reserve_fiat(db)
+    )
+
+    original_verified = int(
+        account.verified_balance
+    )
+
+    target = (
+        original_verified
+        - AMOUNT
+    )
+
+    row = _redemption_row(
+        db,
+        number=401,
+        status="BURNED",
+        transaction_hash=_id(24_401),
+    )
+
+    row.reserve_target = Decimal(
+        target
+    )
+
+    row.reserve_attestation_id = (
+        _id(34_401)
+    )
+
+    row.reserve_attestation_transaction_hash = (
+        None
+    )
+
+    db.flush()
+
+    monkeypatch.setattr(
+        recovery,
+        "_read_reserve_recovery_state",
+        lambda attestation_id: {
+            "attestation_used": True,
+            "verified_reserve": target,
+        },
+    )
+
+    result = (
+        recovery
+        .recover_redemption_request(
+            db,
+            row,
+        )
+    )
+
+    assert result["action"] == (
+        "FINALIZED_PAYOUT"
+    )
+
+    assert row.status == "COMPLETED"
+
+    assert (
+        row.payout_movement_id
+        is not None
+    )
+
+    assert (
+        int(account.verified_balance)
+        == target
+    )
+
+    assert (
+        int(account.reserved_balance)
+        == original_reserved
+    )
+
+    movement = db.get(
+        FiatMovement,
+        row.payout_movement_id,
+    )
+
+    assert movement is not None
+
+    assert (
+        movement.reference
+        == recovery._payout_reference(
+            row.request_id
+        )
+    )
+
+    assert (
+        movement.external_reference
+        == row.request_id
+    )
+
+    second = (
+        recovery
+        .recover_redemption_request(
+            db,
+            row,
+        )
+    )
+
+    assert second["action"] == "SKIPPED"
+
+
+def test_burned_unused_attestation_without_hash_requires_manual_review(
+    db,
+    monkeypatch,
+):
+    account, original_reserved = (
+        _reserve_fiat(db)
+    )
+
+    original_verified = int(
+        account.verified_balance
+    )
+
+    row = _redemption_row(
+        db,
+        number=402,
+        status="BURNED",
+        transaction_hash=_id(24_402),
+    )
+
+    row.reserve_target = Decimal(
+        original_verified
+        - AMOUNT
+    )
+
+    row.reserve_attestation_id = (
+        _id(34_402)
+    )
+
+    row.reserve_attestation_transaction_hash = (
+        None
+    )
+
+    db.flush()
+
+    monkeypatch.setattr(
+        recovery,
+        "_read_reserve_recovery_state",
+        lambda attestation_id: {
+            "attestation_used": False,
+            "verified_reserve":
+                original_verified,
+        },
+    )
+
+    result = (
+        recovery
+        .recover_redemption_request(
+            db,
+            row,
+        )
+    )
+
+    assert result["action"] == (
+        "MANUAL_REVIEW"
+    )
+
+    assert row.status == "BURNED"
+
+    assert (
+        int(account.verified_balance)
+        == original_verified
+    )
+
+    assert (
+        int(account.reserved_balance)
+        == original_reserved + AMOUNT
+    )
+
+
+def test_burned_pending_attestation_waits(
+    db,
+    monkeypatch,
+):
+    account, original_reserved = (
+        _reserve_fiat(db)
+    )
+
+    original_verified = int(
+        account.verified_balance
+    )
+
+    row = _redemption_row(
+        db,
+        number=403,
+        status="BURNED",
+        transaction_hash=_id(24_403),
+    )
+
+    row.reserve_target = Decimal(
+        original_verified
+        - AMOUNT
+    )
+
+    row.reserve_attestation_id = (
+        _id(34_403)
+    )
+
+    row.reserve_attestation_transaction_hash = (
+        _id(44_403)
+    )
+
+    db.flush()
+
+    monkeypatch.setattr(
+        recovery,
+        "_read_reserve_recovery_state",
+        lambda attestation_id: {
+            "attestation_used": False,
+            "verified_reserve":
+                original_verified,
+        },
+    )
+
+    monkeypatch.setattr(
+        recovery,
+        "_get_receipt",
+        lambda transaction_hash: None,
+    )
+
+    result = (
+        recovery
+        .recover_redemption_request(
+            db,
+            row,
+        )
+    )
+
+    assert result["action"] == "WAITING"
+
+    assert row.status == "BURNED"
+
+    assert (
+        int(account.verified_balance)
+        == original_verified
+    )
+
+    assert (
+        int(account.reserved_balance)
+        == original_reserved + AMOUNT
+    )
+
+
+def test_burned_attestation_reserve_mismatch_requires_manual_review(
+    db,
+    monkeypatch,
+):
+    account, original_reserved = (
+        _reserve_fiat(db)
+    )
+
+    original_verified = int(
+        account.verified_balance
+    )
+
+    target = (
+        original_verified
+        - AMOUNT
+    )
+
+    row = _redemption_row(
+        db,
+        number=404,
+        status="BURNED",
+        transaction_hash=_id(24_404),
+    )
+
+    row.reserve_target = Decimal(
+        target
+    )
+
+    row.reserve_attestation_id = (
+        _id(34_404)
+    )
+
+    db.flush()
+
+    monkeypatch.setattr(
+        recovery,
+        "_read_reserve_recovery_state",
+        lambda attestation_id: {
+            "attestation_used": True,
+            "verified_reserve":
+                target - 123,
+        },
+    )
+
+    result = (
+        recovery
+        .recover_redemption_request(
+            db,
+            row,
+        )
+    )
+
+    assert result["action"] == (
+        "MANUAL_REVIEW"
+    )
+
+    assert row.status == "BURNED"
+
+    assert (
+        int(account.verified_balance)
+        == original_verified
+    )
+
+    assert (
+        int(account.reserved_balance)
+        == original_reserved + AMOUNT
+    )
