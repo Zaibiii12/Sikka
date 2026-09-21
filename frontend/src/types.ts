@@ -270,3 +270,57 @@ export interface TreasuryRecoveryStatus {
   mint_requests: TreasuryRecoveryMintItem[];
   redemption_requests: TreasuryRecoveryRedemptionItem[];
 }
+
+
+export interface TreasuryMovementDetails {
+  source?: string;
+  redemption_request_id?: string;
+  reserve_attestation_id?: string;
+  reserve_attestation_tx?: string;
+  reserve_attestation_block?: number;
+  [key: string]: unknown;
+}
+
+
+export interface TreasuryMovement {
+  id: number;
+  reference: string;
+  movement_type: string;
+  currency: string;
+  amount_micro: string;
+  amount_display: string;
+  bank_address: string | null;
+  status: string;
+  external_reference: string | null;
+  details: TreasuryMovementDetails;
+  created_at: string;
+  verified_at: string | null;
+}
+
+
+export interface TreasuryMovementList {
+  count: number;
+  limit: number;
+  offset: number;
+  items: TreasuryMovement[];
+}
+
+
+export interface TreasuryReconciliationHistoryItem {
+  id: number;
+  currency: string;
+  reported_balance_micro: string;
+  ledger_balance_micro: string;
+  difference_micro: string;
+  status: string;
+  source_reference: string | null;
+  created_at: string;
+}
+
+
+export interface TreasuryReconciliationHistoryList {
+  count: number;
+  limit: number;
+  offset: number;
+  items: TreasuryReconciliationHistoryItem[];
+}

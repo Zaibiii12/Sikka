@@ -1,9 +1,15 @@
+import {
+  useState,
+} from "react";
+
 import type {
   Bank,
   TreasuryExceptionReport,
   TreasuryMintRequest,
+  TreasuryMovement,
   TreasuryOnchain,
   TreasuryReconciliation,
+  TreasuryReconciliationHistoryItem,
   TreasuryRecoveryStatus,
   TreasuryRedemption,
   TreasuryReserve,
@@ -12,11 +18,18 @@ import type {
 import AddressDisplay from "./AddressDisplay";
 import MetricCard from "./MetricCard";
 import StatusBadge from "./StatusBadge";
+import TreasuryMovementsTable from "./TreasuryMovementsTable";
+import TreasuryReconciliationHistory from "./TreasuryReconciliationHistory";
+import TreasuryRequestInspector from "./TreasuryRequestInspector";
+import TreasuryOperationsDetail from "./TreasuryOperationsDetail";
 
 
 interface TreasuryViewProps {
   reserve: TreasuryReserve | null;
   onchain: TreasuryOnchain | null;
+  movements: TreasuryMovement[];
+  reconciliationHistory:
+    TreasuryReconciliationHistoryItem[];
   mintRequests: TreasuryMintRequest[];
   redemptions: TreasuryRedemption[];
   reconciliation:
@@ -92,6 +105,8 @@ function requestStatusTone(
 export default function TreasuryView({
   reserve,
   onchain,
+  movements,
+  reconciliationHistory,
   mintRequests,
   redemptions,
   reconciliation,
@@ -99,6 +114,12 @@ export default function TreasuryView({
   recovery,
   banks,
 }: TreasuryViewProps) {
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("ALL");
+
+
   const bankNames =
     new Map(
       banks.map(
@@ -116,6 +137,25 @@ export default function TreasuryView({
       address.toLowerCase(),
     )
     ?? "Unknown institution";
+
+  const filteredMintRequests =
+    statusFilter === "ALL"
+      ? mintRequests
+      : mintRequests.filter(
+        (request) =>
+          request.status
+            === statusFilter,
+      );
+
+  const filteredRedemptions =
+    statusFilter === "ALL"
+      ? redemptions
+      : redemptions.filter(
+        (request) =>
+          request.status
+            === statusFilter,
+      );
+
 
   const healthy =
     Boolean(
@@ -499,6 +539,77 @@ export default function TreasuryView({
         </article>
       </section>
 
+      <TreasuryMovementsTable
+        movements={movements}
+        banks={banks}
+      />
+
+      <TreasuryReconciliationHistory
+        items={reconciliationHistory}
+      />
+
+      <section className="surface treasury-filter-bar">
+        <div className="surface-heading">
+          <div>
+            <span className="section-kicker">
+              Operations
+            </span>
+
+            <h2>
+              Request filtering
+            </h2>
+          </div>
+        </div>
+
+        <div className="treasury-filter-control">
+          <label htmlFor="treasury-status-filter">
+            Status
+          </label>
+
+          <select
+            id="treasury-status-filter"
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(
+                event.target.value,
+              );
+            }}
+          >
+            <option value="ALL">
+              All
+            </option>
+
+            <option value="COMPLETED">
+              Completed
+            </option>
+
+            <option value="PENDING">
+              Pending
+            </option>
+
+            <option value="SUBMITTED">
+              Submitted
+            </option>
+
+            <option value="BURN_SUBMITTED">
+              Burn submitted
+            </option>
+
+            <option value="BURNED">
+              Burned
+            </option>
+
+            <option value="FAILED">
+              Failed
+            </option>
+
+            <option value="MANUAL_REVIEW">
+              Manual review
+            </option>
+          </select>
+        </div>
+      </section>
+
       <section className="surface activity-card treasury-ledger">
         <div className="surface-heading">
           <div>
@@ -512,11 +623,11 @@ export default function TreasuryView({
           </div>
 
           <span className="record-count">
-            {mintRequests.length} records
+            {filteredMintRequests.length} records
           </span>
         </div>
 
-        {mintRequests.length === 0 ? (
+        {filteredMintRequests.length === 0 ? (
           <div className="empty-state">
             <strong>
               No mint requests
@@ -542,7 +653,7 @@ export default function TreasuryView({
               </thead>
 
               <tbody>
-                {mintRequests.map(
+                {filteredMintRequests.map(
                   (request) => (
                     <tr
                       key={
@@ -641,11 +752,11 @@ export default function TreasuryView({
           </div>
 
           <span className="record-count">
-            {redemptions.length} records
+            {filteredRedemptions.length} records
           </span>
         </div>
 
-        {redemptions.length === 0 ? (
+        {filteredRedemptions.length === 0 ? (
           <div className="empty-state">
             <strong>
               No redemptions
@@ -671,7 +782,7 @@ export default function TreasuryView({
               </thead>
 
               <tbody>
-                {redemptions.map(
+                {filteredRedemptions.map(
                   (request) => (
                     <tr
                       key={
@@ -756,6 +867,17 @@ export default function TreasuryView({
           </div>
         )}
       </section>
+
+      <TreasuryOperationsDetail
+        exceptions={exceptions}
+        recovery={recovery}
+      />
+
+      <TreasuryRequestInspector
+        mintRequests={mintRequests}
+        redemptions={redemptions}
+        banks={banks}
+      />
 
       {!healthy && (
         <section className="surface treasury-attention">
