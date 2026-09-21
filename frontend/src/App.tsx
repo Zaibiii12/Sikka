@@ -34,6 +34,13 @@ import type {
   NetworkHealth,
   PublicConfig,
   TokenBalance,
+  TreasuryExceptionReport,
+  TreasuryMintRequest,
+  TreasuryOnchain,
+  TreasuryReconciliation,
+  TreasuryRecoveryStatus,
+  TreasuryRedemption,
+  TreasuryReserve,
 } from "./types";
 
 import Sidebar, {
@@ -49,6 +56,7 @@ import SettlementTable from "./components/SettlementTable";
 import InstitutionDirectory from "./components/InstitutionDirectory";
 import AddressDisplay from "./components/AddressDisplay";
 import StatusBadge from "./components/StatusBadge";
+import TreasuryView from "./components/TreasuryView";
 
 import {
   formatDisplayAmount,
@@ -85,6 +93,12 @@ const viewMeta: Record<
     title: "Institutions",
     subtitle:
       "Permissioned participants authorized on the BlockSikka settlement rail.",
+  },
+
+  treasury: {
+    title: "Treasury",
+    subtitle:
+      "Reserve backing, issuance, redemption and reconciliation controls.",
   },
 
   network: {
@@ -138,6 +152,52 @@ export default function App() {
     settlements,
     setSettlements,
   ] = useState<IndexedSettlement[]>([]);
+
+  const [
+    treasuryReserve,
+    setTreasuryReserve,
+  ] = useState<TreasuryReserve | null>(
+    null,
+  );
+
+  const [
+    treasuryOnchain,
+    setTreasuryOnchain,
+  ] = useState<TreasuryOnchain | null>(
+    null,
+  );
+
+  const [
+    treasuryMintRequests,
+    setTreasuryMintRequests,
+  ] = useState<TreasuryMintRequest[]>([]);
+
+  const [
+    treasuryRedemptions,
+    setTreasuryRedemptions,
+  ] = useState<TreasuryRedemption[]>([]);
+
+  const [
+    treasuryReconciliation,
+    setTreasuryReconciliation,
+  ] = useState<TreasuryReconciliation | null>(
+    null,
+  );
+
+  const [
+    treasuryExceptions,
+    setTreasuryExceptions,
+  ] = useState<TreasuryExceptionReport | null>(
+    null,
+  );
+
+  const [
+    treasuryRecovery,
+    setTreasuryRecovery,
+  ] = useState<TreasuryRecoveryStatus | null>(
+    null,
+  );
+
 
   const [
     walletAddress,
@@ -231,6 +291,62 @@ export default function App() {
     );
 
 
+  const refreshTreasury =
+    useCallback(
+      async () => {
+        try {
+          const [
+            nextReserve,
+            nextOnchain,
+            nextMintRequests,
+            nextRedemptions,
+            nextReconciliation,
+            nextExceptions,
+            nextRecovery,
+          ] = await Promise.all([
+            api.treasuryReserve(),
+            api.treasuryOnchain(),
+            api.treasuryMintRequests(),
+            api.treasuryRedemptions(),
+            api.treasuryReconciliation(),
+            api.treasuryExceptions(),
+            api.treasuryRecoveryStatus(),
+          ]);
+
+          setTreasuryReserve(
+            nextReserve,
+          );
+          setTreasuryOnchain(
+            nextOnchain,
+          );
+          setTreasuryMintRequests(
+            nextMintRequests.items,
+          );
+          setTreasuryRedemptions(
+            nextRedemptions.items,
+          );
+          setTreasuryReconciliation(
+            nextReconciliation,
+          );
+          setTreasuryExceptions(
+            nextExceptions,
+          );
+          setTreasuryRecovery(
+            nextRecovery,
+          );
+        } catch (nextError) {
+          setError(
+            nextError
+              instanceof Error
+              ? nextError.message
+              : String(nextError),
+          );
+        }
+      },
+      [],
+    );
+
+
   const refreshWallet =
     useCallback(
       async (
@@ -277,7 +393,10 @@ export default function App() {
 
         setConfig(nextConfig);
 
-        await refreshSystem();
+        await Promise.all([
+          refreshSystem(),
+          refreshTreasury(),
+        ]);
       } catch (nextError) {
         setError(
           nextError
@@ -287,13 +406,17 @@ export default function App() {
         );
       }
     })();
-  }, [refreshSystem]);
+  }, [
+    refreshSystem,
+    refreshTreasury,
+  ]);
 
 
   useEffect(() => {
     const timer =
       window.setInterval(() => {
         void refreshSystem();
+        void refreshTreasury();
 
         if (
           walletAddress !== ""
@@ -309,6 +432,7 @@ export default function App() {
     };
   }, [
     refreshSystem,
+    refreshTreasury,
     refreshWallet,
     walletAddress,
   ]);
@@ -899,6 +1023,32 @@ export default function App() {
   }
 
 
+  function renderTreasury() {
+    return (
+      <TreasuryView
+        reserve={treasuryReserve}
+        onchain={treasuryOnchain}
+        mintRequests={
+          treasuryMintRequests
+        }
+        redemptions={
+          treasuryRedemptions
+        }
+        reconciliation={
+          treasuryReconciliation
+        }
+        exceptions={
+          treasuryExceptions
+        }
+        recovery={
+          treasuryRecovery
+        }
+        banks={banks}
+      />
+    );
+  }
+
+
   function renderNetwork() {
     return (
       <>
@@ -1202,6 +1352,9 @@ export default function App() {
           {activeView
             === "network"
             && renderNetwork()}
+          {activeView === "treasury"
+            && renderTreasury()}
+
         </main>
 
         <footer className="workspace-footer">

@@ -11,6 +11,13 @@ import type {
   RelayResponse,
   TokenBalance,
   TransactionStatus,
+  TreasuryExceptionReport,
+  TreasuryMintRequestList,
+  TreasuryOnchain,
+  TreasuryReconciliation,
+  TreasuryRecoveryStatus,
+  TreasuryRedemptionList,
+  TreasuryReserve,
 } from "./types";
 
 
@@ -155,6 +162,55 @@ export const api = {
   Promise<ListResponse<IndexedSettlement>> {
     return request(
       "/history/settlements?limit=20",
+    );
+  },
+
+  treasuryReserve():
+  Promise<TreasuryReserve> {
+    return request(
+      "/treasury/reserve",
+    );
+  },
+
+  treasuryOnchain():
+  Promise<TreasuryOnchain> {
+    return request(
+      "/treasury/onchain",
+    );
+  },
+
+  treasuryMintRequests():
+  Promise<TreasuryMintRequestList> {
+    return request(
+      "/treasury/mint-requests?limit=20",
+    );
+  },
+
+  treasuryRedemptions():
+  Promise<TreasuryRedemptionList> {
+    return request(
+      "/treasury/redemptions?limit=20",
+    );
+  },
+
+  treasuryReconciliation():
+  Promise<TreasuryReconciliation> {
+    return request(
+      "/treasury/reconciliation",
+    );
+  },
+
+  treasuryExceptions():
+  Promise<TreasuryExceptionReport> {
+    return request(
+      "/treasury/exceptions",
+    );
+  },
+
+  treasuryRecoveryStatus():
+  Promise<TreasuryRecoveryStatus> {
+    return request(
+      "/treasury/recovery/status",
     );
   },
 };
