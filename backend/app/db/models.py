@@ -620,6 +620,13 @@ class RedemptionRequest(Base):
             "amount > 0",
             name="ck_redemption_request_amount_positive",
         ),
+        UniqueConstraint(
+            "reserve_attestation_id",
+            name=(
+                "uq_redemption_request_"
+                "reserve_attestation_id"
+            ),
+        ),
     )
 
     request_id: Mapped[str] = mapped_column(
@@ -669,6 +676,32 @@ class RedemptionRequest(Base):
     )
 
     block_number: Mapped[int | None] = mapped_column(
+        BigInteger,
+        nullable=True,
+    )
+
+    # Persisted post-burn reserve-attestation evidence.
+    # These fields allow crash recovery to determine whether
+    # reserve lowering was submitted/completed without ever
+    # repeating the SIKKA burn.
+    reserve_target: Mapped[Decimal | None] = mapped_column(
+        Numeric(78, 0),
+        nullable=True,
+    )
+
+    reserve_attestation_id: Mapped[str | None] = mapped_column(
+        String(66),
+        nullable=True,
+    )
+
+    reserve_attestation_transaction_hash: Mapped[str | None] = mapped_column(
+        String(66),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
+
+    reserve_attestation_block_number: Mapped[int | None] = mapped_column(
         BigInteger,
         nullable=True,
     )

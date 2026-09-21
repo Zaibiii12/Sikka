@@ -68,6 +68,14 @@ from app.services.treasury_reconciliation import (
 
 
 
+from app.services.treasury_recovery import (
+    RecoveryError,
+    recovery_status,
+    run_recovery,
+)
+
+
+
 router = APIRouter(
     prefix="/treasury",
     tags=["treasury"],
@@ -614,5 +622,36 @@ def exceptions(
     except ReconciliationError as exc:
         raise HTTPException(
             status_code=400,
+            detail=str(exc),
+        ) from exc
+
+
+@router.get("/recovery/status")
+def treasury_recovery_status(
+    db: Session = Depends(get_db),
+) -> dict:
+    return recovery_status(db)
+
+
+@router.post("/recovery/run")
+def treasury_recovery_run(
+    limit: int = Query(
+        100,
+        ge=1,
+        le=500,
+    ),
+    db: Session = Depends(get_db),
+) -> dict:
+    try:
+        return run_recovery(
+            db,
+            limit=limit,
+        )
+
+    except RecoveryError as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=409,
             detail=str(exc),
         ) from exc
