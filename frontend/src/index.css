@@ -1891,3 +1891,75 @@ select:focus-visible {
 .address-row {
   margin-top: 0;
 }
+
+
+/* =========================================
+   TREASURY OPERATIONS
+   ========================================= */
+
+.treasury-filter-bar {
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+.treasury-filter-control,
+.treasury-request-selector {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.treasury-filter-control {
+  padding-top: 18px;
+}
+
+.treasury-filter-control label,
+.treasury-request-selector label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.treasury-filter-control select,
+.treasury-request-selector select {
+  min-width: 240px;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border, #d5cbbb);
+  background: transparent;
+  font: inherit;
+}
+
+.treasury-request-inspector {
+  margin-top: 24px;
+}
+
+.treasury-request-selector {
+  margin-bottom: 22px;
+}
+
+.treasury-ledger {
+  margin-top: 24px;
+}
+
+.treasury-operations-detail {
+  margin-top: 24px;
+}
+
+.treasury-exception-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.treasury-exception-row {
+  padding: 14px 0;
+  border-top: 1px solid var(--border, #d5cbbb);
+}
+
+.treasury-exception-row code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

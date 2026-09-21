@@ -36,8 +36,10 @@ import type {
   TokenBalance,
   TreasuryExceptionReport,
   TreasuryMintRequest,
+  TreasuryMovement,
   TreasuryOnchain,
   TreasuryReconciliation,
+  TreasuryReconciliationHistoryItem,
   TreasuryRecoveryStatus,
   TreasuryRedemption,
   TreasuryReserve,
@@ -166,6 +168,16 @@ export default function App() {
   ] = useState<TreasuryOnchain | null>(
     null,
   );
+
+  const [
+    treasuryMovements,
+    setTreasuryMovements,
+  ] = useState<TreasuryMovement[]>([]);
+
+  const [
+    treasuryReconciliationHistory,
+    setTreasuryReconciliationHistory,
+  ] = useState<TreasuryReconciliationHistoryItem[]>([]);
 
   const [
     treasuryMintRequests,
@@ -298,6 +310,8 @@ export default function App() {
           const [
             nextReserve,
             nextOnchain,
+            nextMovements,
+            nextReconciliationHistory,
             nextMintRequests,
             nextRedemptions,
             nextReconciliation,
@@ -306,6 +320,8 @@ export default function App() {
           ] = await Promise.all([
             api.treasuryReserve(),
             api.treasuryOnchain(),
+            api.treasuryMovements(),
+            api.treasuryReconciliationHistory(),
             api.treasuryMintRequests(),
             api.treasuryRedemptions(),
             api.treasuryReconciliation(),
@@ -318,6 +334,12 @@ export default function App() {
           );
           setTreasuryOnchain(
             nextOnchain,
+          );
+          setTreasuryMovements(
+            nextMovements.items,
+          );
+          setTreasuryReconciliationHistory(
+            nextReconciliationHistory.items,
           );
           setTreasuryMintRequests(
             nextMintRequests.items,
@@ -1028,6 +1050,12 @@ export default function App() {
       <TreasuryView
         reserve={treasuryReserve}
         onchain={treasuryOnchain}
+        movements={
+          treasuryMovements
+        }
+        reconciliationHistory={
+          treasuryReconciliationHistory
+        }
         mintRequests={
           treasuryMintRequests
         }

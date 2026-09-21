@@ -12,10 +12,14 @@ import type {
   TokenBalance,
   TransactionStatus,
   TreasuryExceptionReport,
+  TreasuryMintRequest,
   TreasuryMintRequestList,
+  TreasuryMovementList,
   TreasuryOnchain,
+  TreasuryReconciliationHistoryList,
   TreasuryReconciliation,
   TreasuryRecoveryStatus,
+  TreasuryRedemption,
   TreasuryRedemptionList,
   TreasuryReserve,
 } from "./types";
@@ -179,6 +183,20 @@ export const api = {
     );
   },
 
+  treasuryMovements():
+  Promise<TreasuryMovementList> {
+    return request(
+      "/treasury/movements?limit=20",
+    );
+  },
+
+  treasuryReconciliationHistory():
+  Promise<TreasuryReconciliationHistoryList> {
+    return request(
+      "/treasury/reconciliation/history?limit=20",
+    );
+  },
+
   treasuryMintRequests():
   Promise<TreasuryMintRequestList> {
     return request(
@@ -186,10 +204,26 @@ export const api = {
     );
   },
 
+  treasuryMintRequest(
+    requestId: string,
+  ): Promise<TreasuryMintRequest> {
+    return request(
+      `/treasury/mint-requests/${requestId}`,
+    );
+  },
+
   treasuryRedemptions():
   Promise<TreasuryRedemptionList> {
     return request(
       "/treasury/redemptions?limit=20",
+    );
+  },
+
+  treasuryRedemption(
+    requestId: string,
+  ): Promise<TreasuryRedemption> {
+    return request(
+      `/treasury/redemptions/${requestId}`,
     );
   },
 
