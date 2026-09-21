@@ -106,6 +106,34 @@ jobs:
       - name: Apply migrations
         run: alembic upgrade head
 
+      - name: Seed CI treasury reserve
+        run: |
+          PYTHONPATH=. python - <<'PYEOF'
+          from decimal import Decimal
+
+          from app.db.session import SessionLocal
+          from app.services.treasury import initialize_reserve_account
+
+          with SessionLocal() as db:
+              account = initialize_reserve_account(
+                  db,
+                  currency="USD",
+              )
+
+              account.verified_balance = Decimal(
+                  "100000000000"
+              )
+
+              account.reserved_balance = Decimal("0")
+
+              db.commit()
+
+              print(
+                  "CI USD reserve seeded:",
+                  int(account.verified_balance),
+              )
+          PYEOF
+
       - name: Run backend tests
         run: |
           pytest -q             tests             --ignore=tests/test_qbft_web3.py
