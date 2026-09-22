@@ -15,6 +15,8 @@ from app.api import (
     treasury,
 )
 from app.api import bank_reconciliation
+from app.api import auth as auth_api
+from app.core.auth import install_auth_middleware
 from app.core.config import get_settings
 from app.observability.metrics import install_metrics
 
@@ -128,6 +130,12 @@ app.include_router(
 )
 
 
+
+app.include_router(
+    auth_api.router,
+    prefix=settings.api_prefix,
+)
+
 # ---------------------------------------------------------
 # Prometheus instrumentation
 #
@@ -139,6 +147,8 @@ app.include_router(
 #   blocksikka_http_request_duration_seconds
 #   blocksikka_http_requests_in_progress
 # ---------------------------------------------------------
+
+install_auth_middleware(app)
 
 install_metrics(
     app,
