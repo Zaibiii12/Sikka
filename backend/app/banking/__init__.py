@@ -19,13 +19,27 @@ from app.banking.models import (
 __all__ = [
     "BankAccount",
     "BankAdapter",
+    "BankFaultMode",
     "BankTransaction",
     "BankTransactionDirection",
     "BankTransactionStatus",
     "DatabaseMockBankAdapter",
     "DuplicateBankTransactionError",
+    "FaultInjectingBankAdapter",
     "InvalidBankTransactionError",
     "InvalidBankTransactionTransitionError",
     "MockBankAdapter",
+    "SimulatedBankFailure",
     "UnknownBankTransactionError",
+    "bank_failure_simulation_catalog",
 ]
+
+from app.banking.simulation import (
+    bank_failure_simulation_catalog,
+)
+
+from app.banking.faults import (
+    BankFaultMode,
+    FaultInjectingBankAdapter,
+    SimulatedBankFailure,
+)
