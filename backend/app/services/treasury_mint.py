@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.services.bank_reversal import assert_no_unresolved_bank_reversals
 
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -452,6 +453,11 @@ def execute_reserve_backed_mint(
     amount_micro: int,
     currency: str = "USD",
 ) -> MintRequest:
+    assert_no_unresolved_bank_reversals(
+        db,
+        currency=currency,
+    )
+
     settings = get_settings()
 
     row = prepare_mint_request(

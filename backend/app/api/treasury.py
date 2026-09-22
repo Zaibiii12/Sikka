@@ -25,6 +25,7 @@ from app.services.treasury import (
 )
 
 
+from app.services.bank_reversal import UnresolvedBankReversalError
 from app.services.treasury_mint import (
     BankNotEligibleError,
     DuplicateMintRequestError,
@@ -272,6 +273,15 @@ def mint(
         return serialize_mint_request(
             row
         )
+
+
+    except UnresolvedBankReversalError as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
 
     except DuplicateMintRequestError as exc:
         db.rollback()

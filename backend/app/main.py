@@ -21,7 +21,7 @@ from app.observability.metrics import install_metrics
 settings = get_settings()
 
 
-from app.api import bank_settlements, mock_bank
+from app.api import bank_reversals, bank_settlements, mock_bank
 
 app = FastAPI(
     title="BlockSikka API",
@@ -151,5 +151,11 @@ app.include_router(
 
 app.include_router(
     bank_settlements.router,
+    prefix=settings.api_prefix,
+)
+
+
+app.include_router(
+    bank_reversals.router,
     prefix=settings.api_prefix,
 )
