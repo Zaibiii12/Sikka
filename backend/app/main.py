@@ -14,6 +14,7 @@ from app.api import (
     transactions,
     treasury,
 )
+from app.api import bank_reconciliation
 from app.core.config import get_settings
 from app.observability.metrics import install_metrics
 
@@ -157,5 +158,11 @@ app.include_router(
 
 app.include_router(
     bank_reversals.router,
+    prefix=settings.api_prefix,
+)
+
+
+app.include_router(
+    bank_reconciliation.router,
     prefix=settings.api_prefix,
 )
