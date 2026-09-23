@@ -13,6 +13,7 @@
     "e2e:ui": "playwright test --ui",
     "e2e:headed": "playwright test --headed",
     "e2e:live": "RUN_LIVE_PAYMENT_E2E=1 playwright test tests/e2e/live-payment.spec.ts --workers=1",
+    "e2e:live-ui": "RUN_LIVE_UI_PAYMENT_E2E=1 playwright test tests/e2e/live-ui-payment.spec.ts --workers=1",
     "e2e:all": "RUN_LIVE_PAYMENT_E2E=1 RUN_LIVE_SECURITY_E2E=1 playwright test --workers=1",
     "e2e:security": "RUN_LIVE_SECURITY_E2E=1 playwright test tests/e2e/security-payment.spec.ts --workers=1",
     "recovery:indexer:send": "node scripts/indexer-outage-payment.mjs",

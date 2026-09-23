@@ -30,6 +30,41 @@ const API_BASE =
   ?? "http://127.0.0.1:8000/api/v1";
 
 
+const AUTH_TOKEN_STORAGE_KEY =
+  "blocksikka.auth.token";
+
+
+function authorizationHeaders():
+Record<string, string> {
+  if (
+    typeof window
+    === "undefined"
+  ) {
+    return {};
+  }
+
+  try {
+    const token =
+      window.sessionStorage
+        .getItem(
+          AUTH_TOKEN_STORAGE_KEY,
+        )
+        ?.trim();
+
+    if (!token) {
+      return {};
+    }
+
+    return {
+      Authorization:
+        `Bearer ${token}`,
+    };
+  } catch {
+    return {};
+  }
+}
+
+
 async function request<T>(
   path: string,
   options?: RequestInit,
@@ -119,6 +154,8 @@ export const api = {
       "/payments/prepare",
       {
         method: "POST",
+        headers:
+          authorizationHeaders(),
         body: JSON.stringify(body),
       },
     );
@@ -134,6 +171,8 @@ export const api = {
       "/payments/relay",
       {
         method: "POST",
+        headers:
+          authorizationHeaders(),
         body: JSON.stringify(body),
       },
     );
