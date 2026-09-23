@@ -17,7 +17,7 @@ test.describe(
         await expect(
           page,
         ).toHaveTitle(
-          "BlockSikka",
+          "BlockSikka | Settlement Network",
         );
 
         await expect(
@@ -25,14 +25,14 @@ test.describe(
             "heading",
             {
               name:
-                "BlockSikka",
+                "Dashboard",
             },
           ),
         ).toBeVisible();
 
         await expect(
           page.getByText(
-            "Permissioned EVM settlement network",
+            "Treasury overview and real-time settlement activity.",
           ),
         ).toBeVisible();
 
@@ -42,6 +42,7 @@ test.describe(
             {
               name:
                 "Connect wallet",
+              exact: true,
             },
           ),
         ).toBeVisible();
@@ -58,7 +59,7 @@ test.describe(
 
         await expect(
           page.getByText(
-            "Connected",
+            "Operational",
             {
               exact: true,
             },
@@ -76,7 +77,7 @@ test.describe(
 
         await expect(
           page.getByText(
-            "SIKKA",
+            "QBFT",
             {
               exact: true,
             },
@@ -132,11 +133,11 @@ test.describe(
           const shortId =
             paymentId.slice(
               0,
-              6,
+              8,
             )
             + "..."
             + paymentId.slice(
-              -4,
+              -6,
             );
 
           await expect(
@@ -156,15 +157,37 @@ test.describe(
       }) => {
         await page.goto("/");
 
-        await page
-          .getByRole(
+        const connectButton =
+          page.getByRole(
             "button",
             {
               name:
                 "Connect wallet",
+              exact: true,
             },
-          )
-          .click();
+          );
+
+        await expect(
+          connectButton,
+        ).toBeVisible();
+
+        await expect(
+          connectButton,
+        ).toBeEnabled();
+
+        /*
+         * This page continuously refreshes network and
+         * indexer state. Invoke the DOM click directly so
+         * this regression test does not depend on
+         * Playwright's geometric stability check.
+         */
+        await connectButton.evaluate(
+          (element) => {
+            (
+              element as HTMLButtonElement
+            ).click();
+          },
+        );
 
         await expect(
           page.getByText(
