@@ -14,6 +14,7 @@ interface PaymentFormProps {
   status: string;
   busy: boolean;
   connected: boolean;
+  readOnly?: boolean;
   onRecipientChange: (
     value: string,
   ) => void;
@@ -31,6 +32,7 @@ export default function PaymentForm({
   status,
   busy,
   connected,
+  readOnly = false,
   onRecipientChange,
   onAmountChange,
   onSubmit,
@@ -43,9 +45,10 @@ export default function PaymentForm({
   }
 
   const disabled =
-    busy
-    || !connected
-    || recipient === "";
+    readOnly
+      || busy
+      || !connected
+      || recipient === "";
 
   return (
     <section className="surface payment-card">
@@ -59,7 +62,9 @@ export default function PaymentForm({
         </div>
 
         <span className="secure-label">
-          EIP-712 signed
+          {readOnly
+            ? "Read-only demo"
+            : "EIP-712 signed"}
         </span>
       </div>
 
@@ -69,7 +74,7 @@ export default function PaymentForm({
 
           <select
             value={recipient}
-            disabled={busy}
+            disabled={busy || readOnly}
             onChange={(event) => {
               onRecipientChange(
                 event.target.value,
@@ -101,7 +106,7 @@ export default function PaymentForm({
               min="0"
               step="0.000001"
               value={amount}
-              disabled={busy}
+              disabled={busy || readOnly}
               onChange={(event) => {
                 onAmountChange(
                   event.target.value,
@@ -117,8 +122,15 @@ export default function PaymentForm({
           <span className="assurance-dot" />
 
           <p>
-            Authorization is signed locally
-            and finalized through QBFT.
+            {readOnly
+              ? (
+                "Public portfolio mode: "
+                + "payment submission is disabled."
+              )
+              : (
+                "Authorization is signed locally "
+                + "and finalized through QBFT."
+              )}
           </p>
         </div>
 
@@ -127,11 +139,13 @@ export default function PaymentForm({
           className="action-button"
           disabled={disabled}
         >
-          {busy
-            ? "Processing payment..."
-            : connected
-              ? "Review & send payment"
-              : "Connect wallet to send"}
+          {readOnly
+            ? "Read-only public demo"
+            : busy
+              ? "Processing payment..."
+              : connected
+                ? "Review & send payment"
+                : "Connect wallet to send"}
         </button>
 
         <div

@@ -9,6 +9,7 @@ interface TopbarProps {
   subtitle: string;
   walletAddress: string;
   bankName?: string;
+  readOnly?: boolean;
   onConnect: () => void;
 }
 
@@ -17,6 +18,7 @@ export default function Topbar({
   subtitle,
   walletAddress,
   bankName,
+  readOnly = false,
   onConnect,
 }: TopbarProps) {
   const connected =
@@ -48,20 +50,27 @@ export default function Topbar({
               ? "wallet-button connected"
               : "wallet-button"
           }
-          onClick={onConnect}
+          disabled={readOnly}
+          onClick={
+            readOnly
+              ? undefined
+              : onConnect
+          }
         >
           <span
             className="wallet-button-dot"
             aria-hidden="true"
           />
 
-          {connected
-            ? shortAddress(
-                walletAddress,
-                7,
-                5,
-              )
-            : "Connect wallet"}
+          {readOnly
+            ? "Read-only demo"
+            : connected
+              ? shortAddress(
+                  walletAddress,
+                  7,
+                  5,
+                )
+              : "Connect wallet"}
         </button>
       </div>
     </header>

@@ -26,6 +26,12 @@ import {
   validatePreparedPayment,
 } from "./payment";
 
+import {
+  PUBLIC_DEMO,
+  PUBLIC_DEMO_MESSAGE,
+} from "./publicDemo";
+
+
 import type {
   Bank,
   IndexedPayment,
@@ -461,6 +467,13 @@ export default function App() {
 
 
   async function handleConnect() {
+    if (PUBLIC_DEMO) {
+      setError(
+        PUBLIC_DEMO_MESSAGE,
+      );
+      return;
+    }
+
     try {
       setError("");
 
@@ -482,6 +495,13 @@ export default function App() {
 
 
   async function handlePayment() {
+    if (PUBLIC_DEMO) {
+      setError(
+        PUBLIC_DEMO_MESSAGE,
+      );
+      return;
+    }
+
     if (
       config === null
       || walletAddress === ""
@@ -823,6 +843,7 @@ export default function App() {
             symbol={symbol}
             status={status}
             busy={busy}
+            readOnly={PUBLIC_DEMO}
             connected={
               walletAddress !== ""
             }
@@ -864,6 +885,7 @@ export default function App() {
             symbol={symbol}
             status={status}
             busy={busy}
+            readOnly={PUBLIC_DEMO}
             connected={
               walletAddress !== ""
             }
@@ -1330,6 +1352,7 @@ export default function App() {
           bankName={
             walletBank?.name
           }
+          readOnly={PUBLIC_DEMO}
           onConnect={() => {
             void handleConnect();
           }}

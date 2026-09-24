@@ -17,6 +17,7 @@ from app.api import (
 from app.api import bank_reconciliation
 from app.api import auth as auth_api
 from app.core.auth import install_auth_middleware
+from app.core.public_demo import install_public_read_only_middleware
 from app.core.config import get_settings
 from app.observability.metrics import install_metrics
 
@@ -135,6 +136,10 @@ app.include_router(
 install_auth_middleware(app)
 
 install_metrics(
+    app,
+)
+
+install_public_read_only_middleware(
     app,
 )
 
