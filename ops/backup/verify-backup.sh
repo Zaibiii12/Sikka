@@ -4,9 +4,11 @@ umask 077
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 POSTGRES_CONTAINER="blocksikka-postgres"
+POSTGRES_USER="blocksikka"
 RPC_URL="http://127.0.0.1:8545"
 
 BACKUP_DIR="${1:-}"
+VERIFY_DB=""
 
 if [ -z "$BACKUP_DIR" ]; then
   if [ -f "$HOME/.blocksikka-last-automated-backup" ]; then
@@ -46,6 +48,24 @@ RESTORE_DIR="$(
 chmod 700 "$RESTORE_DIR"
 
 cleanup() {
+  if [ -n "${VERIFY_DB:-}" ]; then
+    docker exec \
+      "$POSTGRES_CONTAINER" \
+      dropdb \
+        -U "$POSTGRES_USER" \
+        --if-exists \
+        "$VERIFY_DB" \
+      >/dev/null 2>&1 \
+      || true
+  fi
+
+  docker exec \
+    "$POSTGRES_CONTAINER" \
+    rm -f \
+      /tmp/blocksikka-verify.dump \
+    >/dev/null 2>&1 \
+    || true
+
   rm -rf -- "$RESTORE_DIR"
   unset BACKUP_PASSPHRASE || true
 }
@@ -104,14 +124,79 @@ docker exec \
     /tmp/blocksikka-verify.dump \
   >/dev/null
 
+echo "PostgreSQL pg_restore catalogue: PASS"
+
+VERIFY_DB="blocksikka_verify_$(date +%s)_$$"
+
+docker exec \
+  "$POSTGRES_CONTAINER" \
+  createdb \
+    -U "$POSTGRES_USER" \
+    "$VERIFY_DB"
+
+docker exec \
+  "$POSTGRES_CONTAINER" \
+  pg_restore \
+    -U "$POSTGRES_USER" \
+    -d "$VERIFY_DB" \
+    --no-owner \
+    --no-privileges \
+    --exit-on-error \
+    /tmp/blocksikka-verify.dump
+
+PUBLIC_TABLE_COUNT="$(
+  docker exec \
+    "$POSTGRES_CONTAINER" \
+    psql \
+      -U "$POSTGRES_USER" \
+      -d "$VERIFY_DB" \
+      -Atqc \
+      "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';"
+)"
+
+if ! [[ "$PUBLIC_TABLE_COUNT" =~ ^[0-9]+$ ]] \
+   || [ "$PUBLIC_TABLE_COUNT" -eq 0 ]; then
+  echo "Isolated restore contains no public tables."
+  exit 1
+fi
+
+ALEMBIC_VERSION="$(
+  docker exec \
+    "$POSTGRES_CONTAINER" \
+    psql \
+      -U "$POSTGRES_USER" \
+      -d "$VERIFY_DB" \
+      -Atqc \
+      "SELECT version_num FROM alembic_version LIMIT 1;" \
+    2>/dev/null \
+    || true
+)"
+
+if [ -z "$ALEMBIC_VERSION" ]; then
+  echo "Restored database has no Alembic version."
+  exit 1
+fi
+
+echo \
+  "Isolated PostgreSQL restore: PASS " \
+  "tables=$PUBLIC_TABLE_COUNT " \
+  "alembic=$ALEMBIC_VERSION"
+
+docker exec \
+  "$POSTGRES_CONTAINER" \
+  dropdb \
+    -U "$POSTGRES_USER" \
+    "$VERIFY_DB"
+
+VERIFY_DB=""
+
 docker exec \
   "$POSTGRES_CONTAINER" \
   rm -f \
     /tmp/blocksikka-verify.dump
 
-echo "PostgreSQL pg_restore list: PASS"
-
 echo
+
 echo "=== ENCRYPTED BACKUP PASSPHRASE ==="
 
 read -rsp "Backup passphrase: " BACKUP_PASSPHRASE

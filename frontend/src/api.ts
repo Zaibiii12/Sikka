@@ -45,7 +45,7 @@ Record<string, string> {
 
   try {
     const token =
-      window.sessionStorage
+      window.localStorage
         .getItem(
           AUTH_TOKEN_STORAGE_KEY,
         )

@@ -57,18 +57,10 @@ contract SettlementInvariantTest is Test {
     }
 
     function invariant_NoPaymentEverSettledTwice() public view {
-        // If the handler ever successfully double-settled, isSettled would
-        // still just report true - the real proof is that every attempt
-        // counted in ghost_doubleSettleAttempts must have reverted, which
-        // we confirm indirectly: settlement.batchCount() can never exceed
-        // the number of DISTINCT paymentIds that were ever settled once.
-        assertLe(settlement.batchCount(), handler.processedCount());
-    }
+        assertEq(handler.ghost_doubleSettleSuccesses(), 0);
 
-    function invariant_DoubleSettleAttemptsWereMade() public view {
-        // Sanity check on the handler itself: confirms the fuzzer actually
-        // exercised the double-settlement path enough for the invariant
-        // above to be meaningful, not just trivially true from too few calls.
-        assertGe(handler.ghost_settleAttempts(), 0);
+        assertEq(settlement.batchCount(), handler.ghost_successfulSettlements());
+
+        assertLe(handler.ghost_successfulSettlements(), handler.processedCount());
     }
 }

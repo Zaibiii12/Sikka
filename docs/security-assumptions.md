@@ -34,6 +34,14 @@ This document records security assumptions that are required for the current Blo
 - PostgreSQL is trusted to store indexed and application state but is not the source of blockchain consensus truth.
 - The indexer may temporarily lag, so blockchain state remains authoritative.
 - Application health depends on RPC, database, and indexer availability.
+- API write authorization uses development Bearer tokens mapped to explicit roles.
+- Payment preparation and relay require PAYMENT_OPERATOR or TREASURY_ADMIN authorization.
+- The React development payment flow stores its payment-operator credential in browser localStorage and attaches it only to protected payment write requests.
+- Browser localStorage plus static Bearer credentials is a development and E2E mechanism, not a production banking authentication architecture.
+- The development browser credential persists in localStorage across page reloads and browser restarts for the same origin until it is explicitly cleared.
+- This persistence improves local development usability but increases credential exposure duration if malicious same-origin JavaScript executes. Production authentication should instead use short-lived server-managed sessions or an institutional identity mechanism.
+- A script running in the same browser origin could access localStorage; therefore XSS resistance remains important even in this development model.
+- Production authentication requires short-lived sessions or tokens, centralized identity, managed secret storage, revocation, rotation, audited access, and appropriate multi-factor controls.
 
 ## Network Assumptions
 
@@ -45,7 +53,10 @@ This document records security assumptions that are required for the current Blo
 
 - Prometheus metrics provide operational evidence but are not themselves a security boundary.
 - Alerts require an operator or automated response process to have operational value.
-- A green dashboard does not prove the absence of application-level or business-level fraud.
+- The current development monitoring stack evaluates Prometheus alert rules but does not configure Alertmanager or an external notification-delivery path.
+- Operators must therefore actively observe Prometheus or Grafana in the current environment.
+- A green dashboard does not prove the absence of application-level, security, reconciliation, or business-level fraud.
+- Production monitoring requires independent alert delivery, escalation, log aggregation, durable audit evidence, and tested operational response.
 
 ## Recovery Assumptions
 

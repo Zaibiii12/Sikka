@@ -12,25 +12,33 @@ This document records the principal remaining gaps between the current project a
 
 BlockSikka currently demonstrates:
 
-- four-validator Hyperledger Besu QBFT consensus
-- persistent three-peer validator topology
-- validator failure, restart, replacement, and recovery testing
-- Solidity payment and settlement contracts
-- role-based access control and governance controls
-- replay protection and signed payment authorization
-- pause and freeze controls
-- bounded payment and settlement batches
-- unit, integration, fuzz, invariant, and attack tests
-- FastAPI backend and PostgreSQL persistence
-- blockchain event indexing
-- React frontend and end-to-end payment flows
-- GitHub Actions CI and live QBFT system CI
-- Prometheus monitoring and Grafana dashboards
-- alerts and operational failure testing
-- encrypted validator and Besu-state backups
-- PostgreSQL backup and restore verification
-- automated backup verification and recovery procedures
-- measured local performance benchmarks
+- four-validator Hyperledger Besu QBFT consensus on chain ID 1337;
+- persistent validator peer topology and validator failure/recovery testing;
+- Solidity payment, reserve, registry, settlement, governance, pause, freeze, and role-control logic;
+- EIP-712 payment authorization with chain binding, contract binding, nonce protection, expiry, signer validation, and unique payment IDs;
+- unit, integration, fuzz, invariant, attack, and regression tests;
+- FastAPI backend application and relayer services;
+- PostgreSQL application and indexed state;
+- blockchain event indexing for payment and settlement history;
+- React browser payment workflows using an injected EIP-1193 wallet;
+- real browser EIP-712 signing and ERC-20 allowance handling;
+- authenticated payment preparation and relay through scoped PAYMENT_OPERATOR authorization;
+- real backend payment E2E through QBFT finality and indexed PostgreSQL state;
+- real settlement E2E through SettlementEngine and indexed settlement state;
+- real browser E2E from React through wallet signing, FastAPI, Besu, PaymentProcessor, QBFT finality, indexer, PostgreSQL, and UI status;
+- API authentication and RBAC with fail-closed handling for otherwise-unclassified write routes;
+- GitHub Actions core CI and disposable QBFT system CI;
+- explicit opt-in real-network, browser, and security E2E suites;
+- Prometheus metrics and alert rules for validators, FastAPI, indexer, and PostgreSQL;
+- Grafana application, data-pipeline, and network dashboards;
+- encrypted validator-identity backups;
+- encrypted offline Besu chain-state snapshots;
+- PostgreSQL custom-format backups;
+- automated checksum, manifest, identity, chain-state, and isolated PostgreSQL restore verification;
+- incident-response and disaster-recovery runbooks;
+- measured local block, RPC, API, indexer, resource, and gas benchmarks.
+
+Current verified regression baselines include 71 Foundry tests, 148 backend tests with two opt-in real-network tests skipped during the ordinary suite, 13 frontend unit tests, and a 10-test safe browser regression suite.
 
 ## 3. Smart-Contract Assurance Gap
 
@@ -60,11 +68,17 @@ Production infrastructure would require separate hardened hosts, independent fai
 
 ## 6. RPC and API Security Gap
 
-Development RPC configuration is intentionally permissive for local engineering.
+Development Besu RPC configuration is intentionally permissive within the local engineering environment.
 
-Production services would require authenticated and authorized RPC access, TLS or mTLS, network ACLs, separate management and application interfaces, strict administrative-RPC isolation, rate limiting, API-gateway controls, DDoS protection, audit logging, and enterprise service identity.
+The FastAPI write surface now has explicit authentication and RBAC. Payment preparation, relay, and settlement operations require PAYMENT_OPERATOR or TREASURY_ADMIN authorization, while other privileged write routes are mapped to narrower operational roles or fail closed to TREASURY_ADMIN.
 
-The FastAPI service would additionally require production authentication, privileged-action approval, secrets-management integration, structured security logging, vulnerability management, and professional penetration testing.
+The current identity mechanism remains development-oriented. Backend credentials are static environment-backed Bearer tokens, and the real browser payment workflow stores the development PAYMENT_OPERATOR token in browser localStorage.
+
+That design proves authenticated browser integration, but browser-visible static credentials are not appropriate for an institutional production authentication system. A malicious same-origin script or successful XSS attack could access localStorage.
+
+Production services would require an enterprise identity architecture, short-lived sessions or tokens, credential rotation and revocation, managed secrets, MFA where appropriate, durable audit trails, TLS or mTLS, network ACLs, authenticated and network-restricted RPC, separate management interfaces, rate limiting, API-gateway controls, DDoS protection, and professional penetration testing.
+
+The current authentication architecture should therefore be treated as a tested development security control, not as production banking identity infrastructure.
 
 ## 7. Identity and Financial-Compliance Gap
 
@@ -102,25 +116,59 @@ Smart-contract governance represents only one layer of real organizational gover
 
 ## 11. Operations and Monitoring Gap
 
-The project includes Prometheus, Grafana, Besu metrics, backend metrics, indexer metrics, PostgreSQL metrics, alerts, and failure-recovery exercises.
+The project includes Prometheus scraping for all four Besu validators, FastAPI, the indexer, PostgreSQL, and Prometheus itself.
 
-Production operations would normally require 24-hour monitoring, on-call rotations, centralized logging, SIEM integration, anomaly detection, security-event correlation, transaction surveillance, escalation procedures, incident ticketing, and audited response processes.
+Alert rules currently cover validator loss, degraded peer connectivity, stalled block production, FastAPI outage, elevated HTTP 5xx responses, indexer outage, indexer lag, stale indexer progress, PostgreSQL exporter failure, and PostgreSQL unavailability.
 
-The project demonstrates operational technology rather than a staffed production operations organization.
+Grafana dashboards provide application, data-pipeline, and network visibility. CI validates Prometheus configuration, alert rules, monitoring Compose configuration, and dashboard JSON.
+
+The current development stack does not include Alertmanager or another external notification-delivery system. Alerts are evaluated, but an operator must actively observe Prometheus or Grafana.
+
+Production operations would require redundant monitoring, external paging and escalation, centralized logging, SIEM or security-event correlation, durable alert history, transaction surveillance, capacity monitoring, on-call ownership, SLOs and error budgets, incident-management integration, and tested escalation procedures.
+
+The project demonstrates monitoring technology and alert logic rather than a staffed 24-hour production operations organization.
 
 ## 12. Disaster-Recovery Gap
 
-BlockSikka demonstrates PostgreSQL backup and restore, encrypted validator backup and restore, encrypted Besu state snapshots, automated verification, and documented recovery procedures.
+BlockSikka now demonstrates more than backup creation alone.
 
-Production disaster recovery would additionally require formally defined RPO and RTO values, off-site and immutable storage, geographic recovery sites, institutional key custody, scheduled DR exercises, business-continuity planning, crisis-management procedures, and retained audit evidence.
+The verified recovery path includes:
 
-The project proves recovery mechanics rather than enterprise business continuity.
+- PostgreSQL custom-format logical backup;
+- PostgreSQL catalogue validation;
+- restore into a uniquely named isolated verification database;
+- verification of restored public-schema tables;
+- verification of restored Alembic migration state;
+- automatic cleanup of the verification database;
+- encrypted validator-identity backup;
+- restoration and private-key-derived identity validation;
+- comparison of restored validator identities against the backup manifest;
+- comparison of restored identities against the live QBFT validator set;
+- encrypted offline Besu chain-state backup;
+- extraction and validation of all four validator state trees;
+- SHA256 checksum validation;
+- manifest validation;
+- automatic removal of temporary plaintext restore material.
+
+A verified full disaster-recovery backup successfully restored eight PostgreSQL public-schema tables, confirmed Alembic state, matched all restored validator identities to the live QBFT membership, and validated state trees for all four validators.
+
+Production disaster recovery would still require formally defined RPO and RTO values, immutable and off-site storage, multiple geographic recovery locations, institutional key custody, scheduled recovery exercises, formal business-continuity planning, crisis-management procedures, and retained audit evidence.
+
+The project proves concrete technical recovery mechanics, not enterprise business continuity.
 
 ## 13. CI and Software-Supply-Chain Gap
 
-GitHub Actions validates contracts, backend, frontend, fresh QBFT generation, validator material, peer topology, block production, validator membership, and live backend-to-chain connectivity.
+GitHub Actions core CI validates smart contracts, backend regressions, frontend lint/unit/build correctness, PostgreSQL migrations and connectivity, monitoring configuration, dependency security, and protected secret paths.
 
-Production delivery would additionally require protected release environments, signed artifacts, artifact provenance, SBOM generation, dependency policy, release approvals, environment separation, controlled promotion, tested rollback, and privileged deployment identities.
+System CI creates a fresh disposable four-validator QBFT network and verifies generated validator material, Besu key parsing, static-peer topology, validator health, chain ID, ongoing block production, QBFT validator membership, peer connectivity, and backend Web3 connectivity.
+
+Real payment, settlement, browser-wallet, and live security E2E suites remain explicit opt-in tests because they mutate development-chain state and depend on deployed contracts, development credentials, PostgreSQL, the indexer, and running application services.
+
+This boundary is documented rather than presenting the current pipeline as a fully disposable institutional release environment.
+
+A stronger production pipeline would automatically construct a complete disposable environment containing the blockchain network, deployed contracts, database, seeded reserve state, backend, indexer, frontend, browser automation, and disposable signing identities before executing all E2E and failure scenarios from a clean state.
+
+Production delivery would additionally require signed artifacts, artifact provenance, SBOM generation, dependency policy, protected release environments, approvals, environment separation, controlled promotion, rollback testing, and privileged deployment identities.
 
 ## 14. Performance Gap
 
@@ -148,27 +196,37 @@ Internal engineering tests do not replace independent assurance.
 
 ## 17. Major Residual Production Risks
 
-1. Filesystem-based validator keys rather than institutional custody.
-2. Single-host development infrastructure.
-3. Permissive development RPC configuration.
-4. No enterprise KYC, AML, or sanctions platform.
-5. No legal reserve and redemption framework for SIKKA.
-6. No full institutional privacy architecture.
-7. No independent security audit.
-8. No production-scale capacity test.
-9. No staffed 24-hour operational organization.
-10. No regulatory or legal authorization.
+Major remaining production risks include:
 
-These gaps are expected for the intended scope of BlockSikka.
+1. filesystem-based validator and operational keys rather than institutional HSM, MPC, or managed key custody;
+2. single-host development infrastructure and shared failure domains;
+3. permissive development RPC configuration;
+4. static API Bearer credentials and development browser localStorage authentication;
+5. no enterprise identity, KYC, KYB, AML, or sanctions platform;
+6. no legally defined reserve, custody, issuance, and redemption framework for SIKKA;
+7. no complete institutional privacy and data-governance architecture;
+8. no independent smart-contract or infrastructure security audit;
+9. no production-scale load, soak, WAN, or multi-region testing;
+10. no Alertmanager or external unattended paging path;
+11. no staffed 24-hour operational organization;
+12. no formally defined production RPO, RTO, SLO, or SLA;
+13. no institutional software-release and artifact-provenance process;
+14. no legal or regulatory authorization for financial production use.
+
+These gaps are expected for the intended learning and engineering scope of BlockSikka and are documented explicitly rather than hidden behind a production-readiness claim.
 
 ## 18. Conclusion
 
-BlockSikka demonstrates a functioning permissioned EVM payment and settlement architecture with meaningful security testing, CI, observability, backup, and disaster-recovery practices.
+BlockSikka demonstrates a functioning permissioned EVM payment and settlement architecture with meaningful security engineering, automated testing, browser signing, application authorization, QBFT consensus, indexing, observability, backup, and disaster-recovery practices.
 
-It demonstrates how validator consensus is operated and recovered, how payment authorization and replay protection are enforced, how security assumptions become automated tests, how blockchain events are indexed into conventional persistence, and how discovered failure modes become permanent engineering controls.
+The implemented system has demonstrated the complete payment path from React UI through an injected wallet, ERC-20 allowance handling, authenticated FastAPI payment preparation, EIP-712 signing, backend relay, Besu RPC, EVM execution, QBFT finality, event indexing, PostgreSQL persistence, and updated UI state.
+
+The settlement path has likewise been exercised against the real network and verified through indexed application state.
+
+The project also demonstrates how security assumptions become tests, how discovered failures become regression controls, how infrastructure behavior is validated in disposable CI, and how encrypted recovery artifacts can be restore-tested rather than merely created.
 
 BlockSikka should therefore be described as a serious production-oriented blockchain engineering project.
 
-It should not be described as a regulated production banking network or independently certified industry-grade infrastructure.
+It should not be described as a regulated production banking network, independently certified infrastructure, or a substitute for institutional security, compliance, legal governance, custody, and operational controls.
 
-Closing the remaining production gap would require institutional infrastructure, external assurance, secure key custody, formal operations, legal governance, compliance systems, and substantially broader production-scale testing.
+Closing the remaining gap would require institutional infrastructure, secure key custody, enterprise identity, independent assurance, formal operations, production-scale performance testing, financial compliance systems, legal governance, and jurisdiction-specific regulatory authorization.

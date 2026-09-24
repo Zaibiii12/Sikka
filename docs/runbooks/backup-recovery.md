@@ -59,6 +59,10 @@ Verification checks:
 
 - SHA256 checksums.
 - PostgreSQL pg_restore catalogue.
+- PostgreSQL restore into a uniquely named isolated verification database.
+- Presence of restored public-schema tables.
+- Presence of restored Alembic migration state.
+- Automatic deletion of the isolated verification database after validation.
 - Validator encrypted archive decryption.
 - Validator private-key-derived addresses.
 - Manifest validator set.
