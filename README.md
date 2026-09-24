@@ -159,7 +159,7 @@ Run the blockchain indexer in another terminal:
 ```bash
 cd ~/sikka/backend
 source .venv/bin/activate
-python -u scripts/run_indexer.py
+python -u -m scripts.run_indexer
 ```
 
 Indexer health is available at:

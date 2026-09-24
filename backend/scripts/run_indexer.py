@@ -27,6 +27,25 @@ def main() -> None:
         ),
     )
 
+    parser.add_argument(
+        "--metrics-host",
+        default="0.0.0.0",
+        help=(
+            "Address for the indexer "
+            "Prometheus metrics server."
+        ),
+    )
+
+    parser.add_argument(
+        "--metrics-port",
+        type=int,
+        default=9101,
+        help=(
+            "Port for the indexer "
+            "Prometheus metrics server."
+        ),
+    )
+
     args = parser.parse_args()
 
     indexer = BlockSikkaIndexer()
@@ -43,8 +62,8 @@ def main() -> None:
 
     else:
         start_indexer_metrics_server(
-            host="0.0.0.0",
-            port=9101,
+            host=args.metrics_host,
+            port=args.metrics_port,
         )
 
         print(
@@ -52,7 +71,9 @@ def main() -> None:
         )
 
         print(
-            "  http://127.0.0.1:9101/metrics"
+            "  http://"
+            f"{args.metrics_host}:"
+            f"{args.metrics_port}/metrics"
         )
 
         indexer.follow()
