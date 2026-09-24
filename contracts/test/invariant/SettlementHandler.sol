@@ -28,6 +28,8 @@ contract SettlementHandler is Test {
 
     uint256 public ghost_settleAttempts;
     uint256 public ghost_doubleSettleAttempts;
+    uint256 public ghost_successfulSettlements;
+    uint256 public ghost_doubleSettleSuccesses;
 
     constructor(
         PaymentProcessor _processor,
@@ -84,6 +86,12 @@ contract SettlementHandler is Test {
 
         vm.prank(settlementAdmin);
         try settlement.createSettlementBatch(batchId, pids) {
+            ghost_successfulSettlements++;
+
+            if (everSettled[paymentId]) {
+                ghost_doubleSettleSuccesses++;
+            }
+
             everSettled[paymentId] = true;
         } catch {
             // Expected revert when paymentId was already settled - the

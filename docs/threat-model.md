@@ -100,6 +100,16 @@ Residual risk: production use requires authenticated and network-restricted RPC 
 
 ## Application and Data Threats
 
+### Application credential compromise
+
+Threat: a static API Bearer token is exposed through source control, browser compromise, logs, operator error, or malicious same-origin script execution.
+
+Current controls: authentication tokens are configured outside source control, compared using constant-time comparison, mapped to explicit RBAC roles, and protected write routes fail closed when credentials are missing or invalid.
+
+Frontend limitation: the development payment UI stores the PAYMENT_OPERATOR credential in localStorage. This proves authenticated browser integration but is not suitable as a production banking credential model.
+
+Production requirement: replace static browser-visible credentials with institutional identity, short-lived authenticated sessions or tokens, server-side authorization, rotation and revocation, managed secrets, audit logging, and appropriate multi-factor controls.
+
 ### Indexer divergence
 
 Threat: PostgreSQL state falls behind blockchain state.

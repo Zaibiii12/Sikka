@@ -916,7 +916,7 @@ test.describe(
           ({
             token,
           }) => {
-            window.sessionStorage
+            window.localStorage
               .setItem(
                 "blocksikka.auth.token",
                 token,
