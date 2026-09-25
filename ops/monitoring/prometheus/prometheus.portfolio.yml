@@ -23,7 +23,7 @@ scrape_configs:
 
     static_configs:
       - targets:
-          - "172.28.0.11:9545"
+          - "sikka-validator1:9545"
 
         labels:
           validator: "validator1"
@@ -34,7 +34,7 @@ scrape_configs:
 
     static_configs:
       - targets:
-          - "172.28.0.12:9546"
+          - "sikka-validator2:9546"
 
         labels:
           validator: "validator2"
@@ -45,7 +45,7 @@ scrape_configs:
 
     static_configs:
       - targets:
-          - "172.28.0.13:9547"
+          - "sikka-validator3:9547"
 
         labels:
           validator: "validator3"
@@ -56,7 +56,7 @@ scrape_configs:
 
     static_configs:
       - targets:
-          - "172.28.0.14:9548"
+          - "sikka-validator4:9548"
 
         labels:
           validator: "validator4"
