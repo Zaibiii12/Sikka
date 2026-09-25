@@ -2,8 +2,14 @@ import type {
   Bank,
 } from "../types";
 
-import AddressDisplay from "./AddressDisplay";
+import {
+  shortAddress,
+} from "../format";
+
 import StatusBadge from "./StatusBadge";
+
+import "./AccountSummary.css";
+
 
 interface AccountSummaryProps {
   walletAddress: string;
@@ -13,6 +19,7 @@ interface AccountSummaryProps {
   nonce: number | null;
 }
 
+
 export default function AccountSummary({
   walletAddress,
   bank,
@@ -20,81 +27,156 @@ export default function AccountSummary({
   symbol,
   nonce,
 }: AccountSummaryProps) {
+  const connected =
+    walletAddress.trim() !== "";
+
+  const registered =
+    bank !== null;
+
+  const active =
+    bank?.active ?? false;
+
+
   return (
-    <section className="surface account-card">
+    <section
+      className="surface account-summary-card"
+    >
       <div className="surface-heading">
         <div>
           <span className="section-kicker">
-            Account
+            Institution account
           </span>
 
           <h2>
-            {bank?.name
-              ?? "Bank account"}
+            Account summary
           </h2>
         </div>
 
-        {bank && (
+        {connected ? (
           <StatusBadge
             label={
-              bank.active
+              active
                 ? "Active"
-                : "Inactive"
+                : registered
+                  ? "Inactive"
+                  : "Connected"
             }
             tone={
-              bank.active
+              active
                 ? "success"
-                : "danger"
+                : registered
+                  ? "warning"
+                  : "info"
             }
+          />
+        ) : (
+          <StatusBadge
+            label="Disconnected"
+            tone="neutral"
           />
         )}
       </div>
 
-      <div className="balance-block">
-        <span>Available balance</span>
 
-        <strong>
-          {balance}
-        </strong>
-
-        <small>
-          {symbol}
-        </small>
-      </div>
-
-      <div className="account-detail-grid">
-        <div>
-          <span className="detail-label">
-            Payment nonce
-          </span>
-
+      {!connected ? (
+        <div className="account-summary-empty">
           <strong>
-            {nonce ?? "—"}
+            Wallet not connected
           </strong>
+
+          <p>
+            Connect an authorized institutional
+            wallet to view its balance, registry
+            state and payment nonce.
+          </p>
         </div>
+      ) : (
+        <>
+          <div className="account-balance">
+            <span>
+              Available balance
+            </span>
 
-        <div>
-          <span className="detail-label">
-            Registry status
-          </span>
+            <div>
+              <strong>
+                {balance}
+              </strong>
 
-          <strong>
-            {bank
-              ? (
-                bank.active
-                  ? "Authorized"
-                  : "Suspended"
-              )
-              : "Not connected"}
-          </strong>
-        </div>
-      </div>
+              <small>
+                {symbol}
+              </small>
+            </div>
+          </div>
 
-      {walletAddress !== "" && (
-        <AddressDisplay
-          value={walletAddress}
-          label="Wallet address"
-        />
+
+          <dl className="account-summary-details">
+            <div>
+              <dt>
+                Institution
+              </dt>
+
+              <dd>
+                {bank?.name
+                  ?? "Unregistered wallet"}
+              </dd>
+            </div>
+
+            <div>
+              <dt>
+                Registry
+              </dt>
+
+              <dd>
+                {registered ? (
+                  <StatusBadge
+                    label={
+                      active
+                        ? "Authorized"
+                        : "Inactive"
+                    }
+                    tone={
+                      active
+                        ? "success"
+                        : "warning"
+                    }
+                  />
+                ) : (
+                  <StatusBadge
+                    label="Not registered"
+                    tone="warning"
+                  />
+                )}
+              </dd>
+            </div>
+
+            <div>
+              <dt>
+                Next nonce
+              </dt>
+
+              <dd>
+                {nonce ?? "—"}
+              </dd>
+            </div>
+          </dl>
+
+
+          <div className="account-wallet-row">
+            <span>
+              Wallet
+            </span>
+
+            <code
+              title={walletAddress}
+            >
+              {shortAddress(
+                walletAddress,
+                12,
+                10,
+              )}
+            </code>
+          </div>
+        </>
       )}
     </section>
   );

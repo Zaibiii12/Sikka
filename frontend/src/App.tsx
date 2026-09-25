@@ -59,6 +59,7 @@ import Topbar from "./components/Topbar";
 import MetricCard from "./components/MetricCard";
 import AccountSummary from "./components/AccountSummary";
 import PaymentForm from "./components/PaymentForm";
+import PaymentTrace from "./components/PaymentTrace";
 import ActivityTable from "./components/ActivityTable";
 import SettlementTable from "./components/SettlementTable";
 import InstitutionDirectory from "./components/InstitutionDirectory";
@@ -913,6 +914,10 @@ export default function App() {
           />
         </section>
 
+        {!PUBLIC_DEMO && (
+          <PaymentTrace status={status} />
+        )}
+
         <ActivityTable
           payments={payments}
           banks={banks}
@@ -921,6 +926,7 @@ export default function App() {
           }
           decimals={decimals}
           symbol={symbol}
+          limit={12}
         />
       </>
     );
@@ -998,6 +1004,8 @@ export default function App() {
 
         <SettlementTable
           settlements={settlements}
+          payments={payments}
+          onCreated={refreshSystem}
         />
       </>
     );

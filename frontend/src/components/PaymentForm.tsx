@@ -6,6 +6,7 @@ import type {
   Bank,
 } from "../types";
 
+
 interface PaymentFormProps {
   recipients: Bank[];
   recipient: string;
@@ -159,6 +160,7 @@ export default function PaymentForm({
 
           <p>{status}</p>
         </div>
+
       </form>
     </section>
   );

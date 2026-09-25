@@ -1,0 +1,145 @@
+.account-summary-card {
+  min-height: 100%;
+}
+
+
+.account-summary-card .surface-heading {
+  margin-bottom: 20px;
+}
+
+
+.account-summary-empty {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  padding: 32px 20px;
+  text-align: center;
+}
+
+
+.account-summary-empty strong {
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+
+.account-summary-empty p {
+  max-width: 340px;
+  margin: 8px auto 0;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  line-height: 1.55;
+}
+
+
+.account-balance {
+  padding: 4px 0 21px;
+  border-bottom: 1px solid var(--line);
+}
+
+
+.account-balance > span {
+  color: var(--text-muted);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+
+.account-balance > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+
+.account-balance strong {
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.05rem;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+
+.account-balance small {
+  color: var(--copper-dark);
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+
+.account-summary-details {
+  margin: 0;
+}
+
+
+.account-summary-details > div {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  min-height: 54px;
+  border-bottom: 1px solid var(--line);
+}
+
+
+.account-summary-details dt {
+  color: var(--text-muted);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+
+.account-summary-details dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+
+.account-wallet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 16px;
+}
+
+
+.account-wallet-row > span {
+  color: var(--text-muted);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+
+.account-wallet-row code {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--copper-dark);
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+@media (max-width: 620px) {
+  .account-summary-details > div {
+    grid-template-columns: 110px minmax(0, 1fr);
+  }
+
+  .account-wallet-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

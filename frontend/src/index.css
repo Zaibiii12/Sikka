@@ -1963,3 +1963,205 @@ select:focus-visible {
   white-space: normal;
   overflow-wrap: anywhere;
 }
+
+/* =========================================================
+   UI POLISH PASS
+   ========================================================= */
+
+.workspace-content,
+.workspace-footer {
+  width:
+    min(
+      1440px,
+      calc(100% - 64px)
+    );
+}
+
+
+.topbar {
+  min-height: 104px;
+  padding:
+    25px
+    max(32px, calc((100vw - 1440px) / 2));
+}
+
+
+.workspace-content {
+  padding: 26px 0 40px;
+}
+
+
+.metric-grid {
+  margin-bottom: 22px;
+}
+
+
+.metric-card {
+  min-height: 112px;
+  padding: 17px 20px;
+}
+
+
+.metric-value {
+  margin-top: 15px;
+  font-size: 1.75rem;
+}
+
+
+.metric-meta {
+  font-size: 0.67rem;
+}
+
+
+.primary-grid {
+  grid-template-columns:
+    minmax(0, 0.95fr)
+    minmax(0, 1.05fr);
+  gap: 22px;
+}
+
+
+.payments-workspace {
+  grid-template-columns:
+    minmax(0, 0.92fr)
+    minmax(0, 1.08fr);
+  align-items: stretch;
+  gap: 22px;
+}
+
+
+.network-grid {
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
+  align-items: stretch;
+}
+
+
+.surface {
+  padding: 22px;
+}
+
+
+.surface-heading {
+  margin-bottom: 20px;
+  padding-bottom: 13px;
+}
+
+
+.surface-heading h2 {
+  font-size: 1.34rem;
+}
+
+
+.payment-card,
+.account-summary-card {
+  min-height: 100%;
+}
+
+
+.field {
+  margin-bottom: 16px;
+}
+
+
+.field input,
+.field select {
+  height: 44px;
+}
+
+
+.action-button {
+  height: 44px;
+}
+
+
+.activity-table th {
+  padding: 11px 14px;
+  font-size: 0.58rem;
+}
+
+
+.activity-table td {
+  padding: 13px 14px;
+  font-size: 0.71rem;
+}
+
+
+.counterparty-cell strong {
+  font-size: 0.8rem;
+}
+
+
+.counterparty-cell small {
+  font-size: 0.61rem;
+}
+
+
+.activity-table code {
+  font-size: 0.65rem;
+}
+
+
+.validator-row {
+  padding: 16px 2px;
+}
+
+
+.validator-row strong {
+  font-size: 0.8rem;
+}
+
+
+.detail-list > div {
+  min-height: 54px;
+  padding: 14px 0;
+}
+
+
+.detail-list dt,
+.detail-list dd {
+  font-size: 0.68rem;
+}
+
+
+.empty-state {
+  padding: 32px 20px;
+}
+
+
+@media (max-width: 1050px) {
+  .workspace-content,
+  .workspace-footer {
+    width:
+      calc(100% - 44px);
+  }
+}
+
+
+@media (max-width: 850px) {
+  .primary-grid,
+  .payments-workspace,
+  .network-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-content,
+  .workspace-footer {
+    width:
+      calc(100% - 36px);
+  }
+}
+
+
+@media (max-width: 620px) {
+  .workspace-content,
+  .workspace-footer {
+    width:
+      calc(100% - 24px);
+  }
+
+  .surface {
+    padding: 18px;
+  }
+}
