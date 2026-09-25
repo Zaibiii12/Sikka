@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+COMMAND="${1:-}"
+
+case "$COMMAND" in
+
+    demo)
+        exec "$ROOT/deploy/run.sh" demo
+        ;;
+
+    operator)
+        exec "$ROOT/deploy/run.sh" operator
+        ;;
+
+    portfolio)
+        exec "$ROOT/deploy/portfolio.sh"
+        ;;
+
+    status)
+        echo "===== MODE ====="
+
+        if [ -f "$ROOT/deploy/run/mode" ]; then
+            cat "$ROOT/deploy/run/mode"
+        else
+            echo "application not running"
+        fi
+
+        echo
+        "$ROOT/deploy/status.sh"
+
+        echo
+        echo "===== APPLICATION PORTS ====="
+
+        ss -ltnp \
+          | grep -E \
+          ':(5173|8000|8080|9101)\b' \
+          || true
+        ;;
+
+    stop)
+        "$ROOT/deploy/app-stop.sh"
+        "$ROOT/deploy/stop.sh"
+        ;;
+
+    *)
+        echo "BlockSikka"
+        echo
+        echo "Usage:"
+        echo "  ./deploy/blocksikka demo"
+        echo "  ./deploy/blocksikka operator"
+        echo "  ./deploy/blocksikka portfolio"
+        echo "  ./deploy/blocksikka status"
+        echo "  ./deploy/blocksikka stop"
+        exit 1
+        ;;
+esac

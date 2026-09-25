@@ -1,0 +1,132 @@
+networks:
+  sikka-net:
+    name: blocksikka-sikka-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+services:
+  validator1:
+    image: hyperledger/besu:26.7.1
+    container_name: sikka-validator1
+
+    networks:
+      sikka-net:
+        ipv4_address: 172.28.0.11
+
+    # Portfolio deployment:
+    # only the application-facing RPC and local
+    # monitoring endpoint are published to the host.
+    #
+    # Validator P2P and WebSocket are NOT published.
+    ports:
+      - "127.0.0.1:8545:8545"
+      - "127.0.0.1:9545:9545"
+
+    volumes:
+      - ./config/config.toml:/opt/besu/config.toml:ro
+      - ./config/static-nodes-validator1.json:/opt/besu/static-nodes.json:ro
+      - ./genesis/genesis.json:/opt/besu/genesis/genesis.json:ro
+      - ./keys/validator1/key:/opt/besu/keys/key:ro
+      - ./data/validator1:/opt/besu/data
+
+    command: >
+      --config-file=/opt/besu/config.toml
+      --node-private-key-file=/opt/besu/keys/key
+      --p2p-port=30303
+      --rpc-http-port=8545
+      --rpc-ws-port=8546
+      --metrics-port=9545
+
+  validator2:
+    image: hyperledger/besu:26.7.1
+    container_name: sikka-validator2
+
+    depends_on:
+      - validator1
+
+    networks:
+      sikka-net:
+        ipv4_address: 172.28.0.12
+
+    # No host RPC, WebSocket or P2P exposure.
+    # Metrics remain local-only.
+    ports:
+      - "127.0.0.1:9546:9546"
+
+    volumes:
+      - ./config/config.toml:/opt/besu/config.toml:ro
+      - ./config/static-nodes-validator2.json:/opt/besu/static-nodes.json:ro
+      - ./genesis/genesis.json:/opt/besu/genesis/genesis.json:ro
+      - ./keys/validator2/key:/opt/besu/keys/key:ro
+      - ./data/validator2:/opt/besu/data
+
+    command: >
+      --config-file=/opt/besu/config.toml
+      --node-private-key-file=/opt/besu/keys/key
+      --p2p-port=30304
+      --rpc-http-port=8547
+      --rpc-ws-port=8548
+      --metrics-port=9546
+      --bootnodes=${BOOTNODE_ENODE}
+
+  validator3:
+    image: hyperledger/besu:26.7.1
+    container_name: sikka-validator3
+
+    depends_on:
+      - validator1
+
+    networks:
+      sikka-net:
+        ipv4_address: 172.28.0.13
+
+    ports:
+      - "127.0.0.1:9547:9547"
+
+    volumes:
+      - ./config/config.toml:/opt/besu/config.toml:ro
+      - ./config/static-nodes-validator3.json:/opt/besu/static-nodes.json:ro
+      - ./genesis/genesis.json:/opt/besu/genesis/genesis.json:ro
+      - ./keys/validator3/key:/opt/besu/keys/key:ro
+      - ./data/validator3:/opt/besu/data
+
+    command: >
+      --config-file=/opt/besu/config.toml
+      --node-private-key-file=/opt/besu/keys/key
+      --p2p-port=30305
+      --rpc-http-port=8549
+      --rpc-ws-port=8550
+      --metrics-port=9547
+      --bootnodes=${BOOTNODE_ENODE}
+
+  validator4:
+    image: hyperledger/besu:26.7.1
+    container_name: sikka-validator4
+
+    depends_on:
+      - validator1
+
+    networks:
+      sikka-net:
+        ipv4_address: 172.28.0.14
+
+    ports:
+      - "127.0.0.1:9548:9548"
+
+    volumes:
+      - ./config/config.toml:/opt/besu/config.toml:ro
+      - ./config/static-nodes-validator4.json:/opt/besu/static-nodes.json:ro
+      - ./genesis/genesis.json:/opt/besu/genesis/genesis.json:ro
+      - ./keys/validator4/key:/opt/besu/keys/key:ro
+      - ./data/validator4:/opt/besu/data
+
+    command: >
+      --config-file=/opt/besu/config.toml
+      --node-private-key-file=/opt/besu/keys/key
+      --p2p-port=30306
+      --rpc-http-port=8551
+      --rpc-ws-port=8552
+      --metrics-port=9548
+      --bootnodes=${BOOTNODE_ENODE}

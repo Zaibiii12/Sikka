@@ -35,3 +35,4 @@ ops/monitoring/.postgres-exporter.env
 backups/
 
 *:Zone.Identifier
+deploy/run/

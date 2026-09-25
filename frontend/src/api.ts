@@ -1,3 +1,5 @@
+import { PUBLIC_DEMO } from "./publicDemo";
+
 import type {
   Bank,
   IndexedPayment,
@@ -36,6 +38,10 @@ const AUTH_TOKEN_STORAGE_KEY =
 
 function authorizationHeaders():
 Record<string, string> {
+  if (PUBLIC_DEMO) {
+    return {};
+  }
+
   if (
     typeof window
     === "undefined"
@@ -69,6 +75,23 @@ async function request<T>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
+  const method =
+    (options?.method ?? "GET")
+      .toUpperCase();
+
+  if (
+    PUBLIC_DEMO
+    && ![
+      "GET",
+      "HEAD",
+      "OPTIONS",
+    ].includes(method)
+  ) {
+    throw new Error(
+      "This deployment is read-only.",
+    );
+  }
+
   const response = await fetch(
     `${API_BASE}${path}`,
     {

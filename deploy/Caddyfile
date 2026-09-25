@@ -1,0 +1,19 @@
+{
+	admin off
+}
+
+http://127.0.0.1:8080 {
+	bind 127.0.0.1
+
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	handle {
+		root * {$BLOCKSIKKA_ROOT}/frontend/dist
+		try_files {path} /index.html
+		file_server
+	}
+}

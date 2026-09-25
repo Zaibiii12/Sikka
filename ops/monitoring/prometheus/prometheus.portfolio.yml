@@ -1,0 +1,88 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+rule_files:
+  - "/etc/prometheus/alerts.yml"
+
+scrape_configs:
+  - job_name: "prometheus"
+
+    static_configs:
+      - targets:
+          - "localhost:9090"
+
+
+  # Portfolio validators are scraped directly over the
+  # private blocksikka-sikka-net Docker network.
+  #
+  # No validator metrics ports need to be reachable
+  # through the public host interface.
+
+  - job_name: "besu-validator1"
+
+    static_configs:
+      - targets:
+          - "sikka-validator1:9545"
+
+        labels:
+          validator: "validator1"
+          network: "blocksikka"
+
+
+  - job_name: "besu-validator2"
+
+    static_configs:
+      - targets:
+          - "sikka-validator2:9546"
+
+        labels:
+          validator: "validator2"
+          network: "blocksikka"
+
+
+  - job_name: "besu-validator3"
+
+    static_configs:
+      - targets:
+          - "sikka-validator3:9547"
+
+        labels:
+          validator: "validator3"
+          network: "blocksikka"
+
+
+  - job_name: "besu-validator4"
+
+    static_configs:
+      - targets:
+          - "sikka-validator4:9548"
+
+        labels:
+          validator: "validator4"
+          network: "blocksikka"
+
+
+  # PostgreSQL exporter already lives on its private
+  # Docker network and does not need host exposure.
+
+  - job_name: "blocksikka-postgres"
+
+    metrics_path: "/metrics"
+
+    static_configs:
+      - targets:
+          - "postgres-exporter:9187"
+
+        labels:
+          service: "postgresql"
+          network: "blocksikka"
+
+
+  # FastAPI and indexer metrics are intentionally not
+  # scraped in this intermediate portfolio profile.
+  #
+  # They are currently host processes bound to
+  # 127.0.0.1. P4 moves them into private containers,
+  # at which point Prometheus will scrape them directly
+  # over the application Docker network.
