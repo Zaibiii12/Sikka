@@ -1,9 +1,53 @@
 
-[16:51:30] Phase 1: verify primary and internal fallback RPC
+[16:55:05] Phase 1: discover fallback RPC configuration
+Fallback service:           validator2
+Fallback internal RPC port: 8547
+
+[16:55:06] Phase 2: verify primary and fallback RPC
 validator1 healthy
 validator2 healthy
-curl: (7) Failed to connect to 127.0.0.1 port 8545 after 0 ms: Could not connect to server
+Primary block:              152020
+Fallback block:             152021
 
-RPC OUTAGE TEST FAILED: Could not query internal RPC on validator2
+[16:55:07] Phase 3: stop primary RPC validator
+ Container sikka-validator1  Stopping
+ Container sikka-validator1  Stopped
+Primary RPC outage confirmed: http://127.0.0.1:8545
 
-[16:51:30] Cleanup: ensuring validator1 is running
+[16:55:11] Phase 4: verify QBFT continues through fallback validator
+Fallback blocks: 152022 -> 152025
+Fallback consensus continuity PASS
+
+[16:55:19] Phase 5: restart validator1
+ Container sikka-validator1  Starting
+ Container sikka-validator1  Started
+validator1 status=starting, waiting...
+validator1 status=starting, waiting...
+validator1 status=starting, waiting...
+validator1 status=starting, waiting...
+validator1 status=starting, waiting...
+validator1 status=starting, waiting...
+validator1 status=starting, waiting...
+validator1 status=starting, waiting...
+validator1 healthy
+
+[16:55:46] Phase 6: verify validator1 catches up
+Primary=152032 Fallback=152033
+
+[16:55:48] Phase 7: verify peer recovery
+Primary peer count: 0x3
+
+========================================
+ RPC OUTAGE / RECOVERY TEST: PASS
+========================================
+RPC port discovery              PASS
+Primary RPC outage              PASS
+Fallback chain continuity       PASS
+Primary RPC recovery            PASS
+Primary validator catch-up      PASS
+Peer recovery                   PASS
+Fallback internal RPC port      8547
+Primary head                    152033
+Fallback head                   152034
+Primary peer count              0x3
+========================================

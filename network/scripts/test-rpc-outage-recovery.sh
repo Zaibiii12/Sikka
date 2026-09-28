@@ -113,9 +113,39 @@ ensure_probe_image() {
         >/dev/null
 }
 
+fallback_rpc_port() {
+    local id
+    local port
+
+    id="$(container_id "$FALLBACK_SERVICE")"
+
+    if [[ -z "$id" ]]; then
+        fail \
+            "Could not find container for $FALLBACK_SERVICE"
+    fi
+
+    port="$(
+        docker inspect "$id" \
+            | jq -r '
+                .[0].Config.Cmd[]?
+                | select(startswith("--rpc-http-port="))
+                | split("=")[1]
+            ' \
+            | head -n 1
+    )"
+
+    if [[ ! "$port" =~ ^[0-9]+$ ]]; then
+        fail \
+            "Could not discover RPC port for $FALLBACK_SERVICE"
+    fi
+
+    printf '%s\n' "$port"
+}
+
 internal_rpc() {
     local payload="$1"
     local id
+    local port
 
     id="$(container_id "$FALLBACK_SERVICE")"
 
@@ -123,14 +153,17 @@ internal_rpc() {
         return 1
     fi
 
+    port="$(fallback_rpc_port)"
+
     docker run \
         --rm \
         --network "container:$id" \
         "$RPC_PROBE_IMAGE" \
         -fsS \
+        --max-time 5 \
         -H "Content-Type: application/json" \
         --data "$payload" \
-        http://127.0.0.1:8545
+        "http://127.0.0.1:$port"
 }
 
 fallback_block_number() {
@@ -198,7 +231,18 @@ command -v jq >/dev/null \
 ensure_probe_image
 
 log \
-    "Phase 1: verify primary and internal fallback RPC"
+    "Phase 1: discover fallback RPC configuration"
+
+fallback_port="$(fallback_rpc_port)"
+
+printf 'Fallback service:           %s\n' \
+    "$FALLBACK_SERVICE"
+
+printf 'Fallback internal RPC port: %s\n' \
+    "$fallback_port"
+
+log \
+    "Phase 2: verify primary and fallback RPC"
 
 primary_rpc_available \
     || fail \
@@ -215,14 +259,14 @@ fallback_before="$(
     fallback_block_number
 )"
 
-printf 'Primary block:            %s\n' \
+printf 'Primary block:              %s\n' \
     "$primary_before"
 
-printf 'Internal fallback block:  %s\n' \
+printf 'Fallback block:             %s\n' \
     "$fallback_before"
 
 log \
-    "Phase 2: stop primary RPC validator"
+    "Phase 3: stop primary RPC validator"
 
 docker compose \
     -f "$COMPOSE_FILE" \
@@ -239,7 +283,7 @@ printf 'Primary RPC outage confirmed: %s\n' \
     "$PRIMARY_RPC"
 
 log \
-    "Phase 3: verify QBFT continues through validator2"
+    "Phase 4: verify QBFT continues through fallback validator"
 
 fallback_start="$(
     fallback_block_number
@@ -263,7 +307,7 @@ fi
 printf 'Fallback consensus continuity PASS\n'
 
 log \
-    "Phase 4: restart validator1"
+    "Phase 5: restart validator1"
 
 docker compose \
     -f "$COMPOSE_FILE" \
@@ -273,7 +317,7 @@ wait_for_health validator1
 wait_for_primary_rpc
 
 log \
-    "Phase 5: verify validator1 catches up"
+    "Phase 6: verify validator1 catches up"
 
 deadline=$((SECONDS + RECOVERY_TIMEOUT_SECONDS))
 caught_up=0
@@ -307,11 +351,11 @@ done
 
 if [[ "$caught_up" != "1" ]]; then
     fail \
-        "Primary validator did not catch up"
+        "Primary validator did not catch up within ${RECOVERY_TIMEOUT_SECONDS}s"
 fi
 
 log \
-    "Phase 6: verify peer recovery"
+    "Phase 7: verify peer recovery"
 
 deadline=$((SECONDS + RECOVERY_TIMEOUT_SECONDS))
 peer_recovered=0
@@ -355,11 +399,14 @@ printf '\n'
 printf '========================================\n'
 printf ' RPC OUTAGE / RECOVERY TEST: PASS\n'
 printf '========================================\n'
+printf 'RPC port discovery              PASS\n'
 printf 'Primary RPC outage              PASS\n'
 printf 'Fallback chain continuity       PASS\n'
 printf 'Primary RPC recovery            PASS\n'
 printf 'Primary validator catch-up      PASS\n'
 printf 'Peer recovery                   PASS\n'
+printf 'Fallback internal RPC port      %s\n' \
+    "$fallback_port"
 printf 'Primary head                    %s\n' \
     "$final_primary"
 printf 'Fallback head                   %s\n' \
