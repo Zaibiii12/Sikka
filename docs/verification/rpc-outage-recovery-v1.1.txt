@@ -1,0 +1,9 @@
+
+[16:51:30] Phase 1: verify primary and internal fallback RPC
+validator1 healthy
+validator2 healthy
+curl: (7) Failed to connect to 127.0.0.1 port 8545 after 0 ms: Could not connect to server
+
+RPC OUTAGE TEST FAILED: Could not query internal RPC on validator2
+
+[16:51:30] Cleanup: ensuring validator1 is running
