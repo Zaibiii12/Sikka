@@ -38,7 +38,7 @@ BlockSikka currently demonstrates:
 - incident-response and disaster-recovery runbooks;
 - measured local block, RPC, API, indexer, resource, and gas benchmarks.
 
-Current verified regression baselines include 71 Foundry tests, 148 backend tests with two opt-in real-network tests skipped during the ordinary suite, 13 frontend unit tests, and a 10-test safe browser regression suite.
+Current verified regression baselines include 71 Foundry tests, 153 backend tests with two opt-in real-network tests skipped during the ordinary suite, 13 frontend unit tests, and a 10-test safe browser regression suite.
 
 ## 3. Smart-Contract Assurance Gap
 
@@ -150,7 +150,7 @@ The verified recovery path includes:
 - manifest validation;
 - automatic removal of temporary plaintext restore material.
 
-A verified full disaster-recovery backup successfully restored eight PostgreSQL public-schema tables, confirmed Alembic state, matched all restored validator identities to the live QBFT membership, and validated state trees for all four validators.
+A verified full disaster-recovery backup successfully restored 15 PostgreSQL public-schema tables, confirmed Alembic state, matched all restored validator identities to the live QBFT membership, and validated state trees for all four validators.
 
 Production disaster recovery would still require formally defined RPO and RTO values, immutable and off-site storage, multiple geographic recovery locations, institutional key custody, scheduled recovery exercises, formal business-continuity planning, crisis-management procedures, and retained audit evidence.
 

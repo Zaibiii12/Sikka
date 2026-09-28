@@ -41,7 +41,7 @@ cleanup() {
 
     (
       cd "$NETWORK_DIR"
-      docker compose up -d
+      docker compose -f "$NETWORK_DIR/docker-compose.portfolio.yml" up -d
     ) || true
   fi
 
@@ -356,7 +356,7 @@ if [ "$WITH_BESU_STATE" -eq 1 ]; then
 
   cd "$NETWORK_DIR"
 
-  docker compose stop \
+  docker compose -f "$NETWORK_DIR/docker-compose.portfolio.yml" stop \
     validator1 \
     validator2 \
     validator3 \
@@ -408,7 +408,7 @@ if [ "$WITH_BESU_STATE" -eq 1 ]; then
   echo "Offline state archive integrity: PASS"
 
   cd "$NETWORK_DIR"
-  docker compose up -d
+  docker compose -f "$NETWORK_DIR/docker-compose.portfolio.yml" up -d
 
   NETWORK_STOPPED=0
 
