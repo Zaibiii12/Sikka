@@ -1,0 +1,64 @@
+
+[16:40:45] Phase 1: baseline network verification
+validator1 healthy
+validator2 healthy
+validator3 healthy
+validator4 healthy
+Validator set: 4
+Peer count: 0x3
+4/4 baseline blocks: 151640 -> 151643
+
+[16:40:53] Phase 2: stop one validator
+ Container sikka-validator4  Stopping
+ Container sikka-validator4  Stopped
+3/4 validators blocks: 151646 -> 151647
+
+[16:41:05] 3/4 consensus PASSED
+
+[16:41:05] Phase 3: stop second validator and verify quorum loss
+ Container sikka-validator3  Stopping
+ Container sikka-validator3  Stopped
+2/4 blocks: 151648 -> 151648
+
+[16:41:20] 2/4 quorum-loss behavior PASSED
+
+[16:41:20] Phase 4: restore validator3 and validator4
+ Container sikka-validator3  Starting
+ Container sikka-validator4  Starting
+ Container sikka-validator4  Started
+ Container sikka-validator3  Started
+validator3 status=starting, waiting...
+validator3 status=starting, waiting...
+validator3 status=starting, waiting...
+validator3 status=starting, waiting...
+validator3 status=starting, waiting...
+validator3 status=starting, waiting...
+validator3 status=starting, waiting...
+validator3 status=starting, waiting...
+validator3 healthy
+validator4 healthy
+Peer count restored: 0x3
+Restored validator set: 4
+
+[16:41:47] Waiting for consensus recovery
+Recovery blocks: 151648 -> 151648
+Recovery blocks: 151648 -> 151648
+Recovery blocks: 151648 -> 151648
+Recovery blocks: 151648 -> 151648
+Recovery blocks: 151648 -> 151648
+Recovery blocks: 151648 -> 151648
+Recovery blocks: 151648 -> 151648
+Recovery blocks: 151649 -> 151652
+
+[16:42:49] QBFT recovery PASSED
+
+========================================
+ QBFT FAULT-TOLERANCE TEST: PASS
+========================================
+4/4 baseline consensus        PASS
+3/4 validator consensus       PASS
+2/4 quorum loss               PASS
+4/4 recovery                  PASS
+Final peer count              0x3
+Final validator set           4
+========================================
