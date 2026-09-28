@@ -28,6 +28,45 @@ The project focuses not only on the successful transaction path, but also on fai
 
 ---
 
+## Screenshots
+
+### Institutional Payment Dashboard
+
+The operations dashboard shows institutional balances, QBFT network health,
+indexer synchronization, authorization state, and EIP-712 payment controls.
+
+![BlockSikka dashboard](docs/assets/screenshots/dashboard.png)
+
+### End-to-End Payment Lifecycle
+
+A payment is tracked from preparation and EIP-712 signing through QBFT
+finality, indexing, and settlement.
+
+![BlockSikka payment lifecycle](docs/assets/screenshots/payment-trace.png)
+
+### Reserve-Backed Treasury
+
+Treasury controls compare database and on-chain reserves and expose mint
+capacity, reserve deficits, reconciliation status, and recovery state.
+
+![BlockSikka treasury](docs/assets/screenshots/treasury.png)
+
+### QBFT Monitoring
+
+Prometheus and Grafana monitor validator availability, peer connectivity,
+block production, QBFT behavior, and node performance.
+
+![BlockSikka Grafana monitoring](docs/assets/screenshots/grafana-network.png)
+
+### Settlement Operations
+
+Processed payments can be grouped into atomic settlement batches while the
+system prevents duplicate settlement.
+
+![BlockSikka settlement](docs/assets/screenshots/settlement.png)
+
+---
+
 ## Key Features
 
 ### Blockchain Network
