@@ -64,20 +64,20 @@ jobs:
         env:
           POSTGRES_USER: blocksikka
           POSTGRES_PASSWORD: blocksikka_ci_password
-          POSTGRES_DB: blocksikka
+          POSTGRES_DB: blocksikka_test
 
         ports:
           - 5432:5432
 
         options: >-
-          --health-cmd "pg_isready -U blocksikka -d blocksikka"
+          --health-cmd "pg_isready -U blocksikka -d blocksikka_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
 
     env:
       APP_ENV: ci
-      DATABASE_URL: postgresql+psycopg://blocksikka:blocksikka_ci_password@127.0.0.1:5432/blocksikka
+      DATABASE_URL: postgresql+psycopg://blocksikka:blocksikka_ci_password@127.0.0.1:5432/blocksikka_test
 
     defaults:
       run:
@@ -150,20 +150,20 @@ jobs:
         env:
           POSTGRES_USER: blocksikka
           POSTGRES_PASSWORD: blocksikka_ci_password
-          POSTGRES_DB: blocksikka
+          POSTGRES_DB: blocksikka_test
 
         ports:
           - 5432:5432
 
         options: >-
-          --health-cmd "pg_isready -U blocksikka -d blocksikka"
+          --health-cmd "pg_isready -U blocksikka -d blocksikka_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
 
     env:
       APP_ENV: ci
-      DATABASE_URL: postgresql+psycopg://blocksikka:blocksikka_ci_password@127.0.0.1:5432/blocksikka
+      DATABASE_URL: postgresql+psycopg://blocksikka:blocksikka_ci_password@127.0.0.1:5432/blocksikka_test
 
     defaults:
       run:
