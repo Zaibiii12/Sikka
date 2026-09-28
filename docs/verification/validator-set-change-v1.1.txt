@@ -1,0 +1,50 @@
+
+[16:59:47] Phase 1: preflight
+Candidate validator4: 0xf2761fc0952b3b299a8b24c606fa1770dd1aa315
+Initial validator count: 4
+validator1 pending votes: 0
+validator2 pending votes: 0
+validator3 pending votes: 0
+validator4 pending votes: 0
+4-validator baseline blocks: 152155 -> 152158
+
+[16:59:58] Phase 2: vote to remove validator4
+validator1 voting proposal=false candidate=0xf2761fc0952b3b299a8b24c606fa1770dd1aa315
+{"jsonrpc":"2.0","id":1,"result":true}
+validator2 voting proposal=false candidate=0xf2761fc0952b3b299a8b24c606fa1770dd1aa315
+{"jsonrpc":"2.0","id":1,"result":true}
+validator3 voting proposal=false candidate=0xf2761fc0952b3b299a8b24c606fa1770dd1aa315
+{"jsonrpc":"2.0","id":1,"result":true}
+
+[16:59:59] Waiting for validator4 removal
+Validator set count=4 candidate_present=true
+Validator set count=4 candidate_present=false
+Validator set count=3 candidate_present=false
+validator4 removal PASS
+3-validator set blocks: 152164 -> 152167
+
+[17:00:15] Phase 3: vote to add validator4 back
+validator1 voting proposal=true candidate=0xf2761fc0952b3b299a8b24c606fa1770dd1aa315
+{"jsonrpc":"2.0","id":1,"result":true}
+validator2 voting proposal=true candidate=0xf2761fc0952b3b299a8b24c606fa1770dd1aa315
+{"jsonrpc":"2.0","id":1,"result":true}
+validator3 voting proposal=true candidate=0xf2761fc0952b3b299a8b24c606fa1770dd1aa315
+{"jsonrpc":"2.0","id":1,"result":true}
+
+[17:00:17] Waiting for validator4 restoration
+Validator set count=3 candidate_present=false
+Validator set count=4 candidate_present=true
+validator4 restoration PASS
+restored 4-validator set blocks: 152171 -> 152174
+
+========================================
+ VALIDATOR-SET CHANGE TEST: PASS
+========================================
+Initial validator count          4
+Remove validator4               PASS
+Three-validator consensus       PASS
+Re-add validator4               PASS
+Restored validator count        4
+Final peer count                0x3
+Validator4                      0xf2761fc0952b3b299a8b24c606fa1770dd1aa315
+========================================
