@@ -39,6 +39,8 @@ jobs:
     env:
       RPC_URL: http://127.0.0.1:8545
       CHAIN_ID: "1337"
+      DATABASE_URL: postgresql+psycopg://blocksikka:blocksikka_ci_password@127.0.0.1:5432/blocksikka_test
+      BLOCKSIKKA_AUTH_REQUIRED: "false"
 
     steps:
 
