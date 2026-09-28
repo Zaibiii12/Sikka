@@ -231,6 +231,34 @@ export const api = {
     );
   },
 
+  settlementPaymentStatus(
+    paymentId: string,
+  ): Promise<{
+    payment_id: string;
+    settled: boolean;
+  }> {
+    return request(
+      `/settlements/payment/${paymentId}`,
+    );
+  },
+
+  createSettlement(
+    body: {
+      batch_id: string;
+      payment_ids: string[];
+    },
+  ): Promise<RelayResponse> {
+    return request(
+      "/settlements",
+      {
+        method: "POST",
+        headers:
+          authorizationHeaders(),
+        body: JSON.stringify(body),
+      },
+    );
+  },
+
   treasuryReserve():
   Promise<TreasuryReserve> {
     return request(

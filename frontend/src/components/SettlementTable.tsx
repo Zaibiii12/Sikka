@@ -198,15 +198,24 @@ export default function SettlementTable({
 
   useEffect(
     () => {
-      setSelected(
-        (current) =>
-          current.filter(
-            (paymentId) =>
-              currentPaymentIds.has(
-                paymentId.toLowerCase(),
+      const timer = window.setTimeout(
+        () => {
+          setSelected(
+            (current) =>
+              current.filter(
+                (paymentId) =>
+                  currentPaymentIds.has(
+                    paymentId.toLowerCase(),
+                  ),
               ),
-          ),
+          );
+        },
+        0,
       );
+
+      return () => {
+        window.clearTimeout(timer);
+      };
     },
     [currentPaymentIds],
   );

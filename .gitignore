@@ -36,3 +36,11 @@ backups/
 
 *:Zone.Identifier
 deploy/run/
+
+# Local development artifacts
+deploy/logs/
+*.before-*
+*.before-*
+blocksikka-*.zip
+blocksikka-ui-polish.txt
+blocksikka-ui-polish/

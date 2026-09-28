@@ -42,11 +42,11 @@ const CHAIN_ID_HEX =
 
 const CHAIN_NAME =
   import.meta.env.VITE_CHAIN_NAME
-  ?? "BlockSikka Local";
+  ?? "BlockSikka";
 
 const RPC_URL =
   import.meta.env.VITE_RPC_URL
-  ?? "http://127.0.0.1:8547";
+  ?? "http://localhost:8545";
 
 
 const ERC20_ABI = [

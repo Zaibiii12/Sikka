@@ -22,8 +22,6 @@ services:
     # Validator P2P and WebSocket are NOT published.
     ports:
       - "127.0.0.1:8545:8545"
-      - "127.0.0.1:9545:9545"
-
     volumes:
       - ./config/config.toml:/opt/besu/config.toml:ro
       - ./config/static-nodes-validator1.json:/opt/besu/static-nodes.json:ro
@@ -52,9 +50,6 @@ services:
 
     # No host RPC, WebSocket or P2P exposure.
     # Metrics remain local-only.
-    ports:
-      - "127.0.0.1:9546:9546"
-
     volumes:
       - ./config/config.toml:/opt/besu/config.toml:ro
       - ./config/static-nodes-validator2.json:/opt/besu/static-nodes.json:ro
@@ -82,9 +77,6 @@ services:
       sikka-net:
         ipv4_address: 172.28.0.13
 
-    ports:
-      - "127.0.0.1:9547:9547"
-
     volumes:
       - ./config/config.toml:/opt/besu/config.toml:ro
       - ./config/static-nodes-validator3.json:/opt/besu/static-nodes.json:ro
@@ -111,9 +103,6 @@ services:
     networks:
       sikka-net:
         ipv4_address: 172.28.0.14
-
-    ports:
-      - "127.0.0.1:9548:9548"
 
     volumes:
       - ./config/config.toml:/opt/besu/config.toml:ro

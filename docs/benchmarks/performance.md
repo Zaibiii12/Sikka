@@ -180,9 +180,9 @@ Because BlockSikka uses a private zero-base-fee development network, these gas m
 
 The benchmark was performed after the following regression baseline passed:
 
-- 61 Foundry contract tests
+- 71 Foundry contract tests
 - 0 contract failures
-- 10 backend tests
+- 153 backend tests
 - frontend lint
 - frontend unit tests
 - frontend production build
