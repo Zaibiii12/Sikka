@@ -167,6 +167,6 @@ contract PaymentProcessor is EIP712, ReentrancyGuard, Pausable {
         emit PaymentSubmitted(order.paymentId, order.from, order.to, order.amount, order.nonce);
 
         // --- Interaction: external call happens last ---
-        privateUSD.transferFrom(order.from, order.to, order.amount);
+        require(privateUSD.transferFrom(order.from, order.to, order.amount), "PAYMENT_TRANSFER_FAILED");
     }
 }

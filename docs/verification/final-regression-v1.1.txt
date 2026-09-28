@@ -1,0 +1,318 @@
+========================================
+ BLOCKSIKKA v1.1 FINAL REGRESSION
+ Date: 2026-09-28T17:17:16+05:00
+ Commit: 3af7e15e5a07d159d4402540f1f81075852b28b9
+ Branch: v1.1-engineering
+========================================
+
+===== GIT =====
+## v1.1-engineering...origin/v1.1-engineering
+?? docs/verification/final-regression-v1.1.txt
+
+===== STACK STATUS BEFORE TESTS =====
+======================================
+ BlockSikka status
+======================================
+
+===== QBFT =====
+Validators         4/4 healthy
+Block              152677
+Peers              0x3
+QBFT set           4 validators
+
+===== APPLICATION =====
+PostgreSQL         RUNNING
+FastAPI            HEALTHY
+Indexer            RUNNING  lag=0.0 caught_up=1.0 errors=179.0
+Frontend           RUNNING
+
+===== MONITORING =====
+Prometheus         true
+Grafana            true
+
+===== URLS =====
+Frontend           http://127.0.0.1:5173
+API                http://127.0.0.1:8000
+Indexer            http://127.0.0.1:9101/metrics
+Besu RPC           http://127.0.0.1:8545
+
+===== FOUNDRY =====
+Compiling 72 files with Solc 0.8.26
+Solc 0.8.26 finished in 4.64s
+Compiler run successful!
+
+Ran 6 tests for test/unit/AccessManager.t.sol:AccessManagerTest
+[PASS] test_AdminHasDefaultAdminRole() (gas: 13166)
+[PASS] test_AdminHasGovernanceRole() (gas: 13211)
+[PASS] test_GovernanceCanGrantMinterRole() (gas: 72138)
+[PASS] test_GovernanceCanRevokeMinterRole() (gas: 109891)
+[PASS] test_NonGovernanceCannotGrantMinterRole() (gas: 44595)
+[PASS] test_RoleAdminOfMinterRoleIsGovernance() (gas: 16122)
+Suite result: ok. 6 passed; 0 failed; 0 skipped; finished in 25.17ms (1.65ms CPU time)
+
+Ran 9 tests for test/unit/BankRegistry.t.sol:BankRegistryTest
+[PASS] test_BankAdminCanRegisterBank() (gas: 176947)
+[PASS] test_BankCountAndEnumeration() (gas: 309728)
+[PASS] test_CannotDeactivateUnregisteredBank() (gas: 43083)
+[PASS] test_CannotRegisterEmptyName() (gas: 41068)
+[PASS] test_CannotRegisterSameBankTwice() (gas: 187618)
+[PASS] test_CannotRegisterZeroAddress() (gas: 39108)
+[PASS] test_DeactivateBank() (gas: 186071)
+[PASS] test_NonBankAdminCannotRegisterBank() (gas: 47130)
+[PASS] test_ReactivateBank() (gas: 240330)
+Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 25.62ms (2.32ms CPU time)
+
+Ran 10 tests for test/unit/PrivateUSD.t.sol:PrivateUSDTest
+[PASS] test_BurnerCanBurn() (gas: 150837)
+[PASS] test_CannotMintToZeroAddress() (gas: 43000)
+[PASS] test_CannotMintZeroAmount() (gas: 45076)
+[PASS] test_DecimalsIsSix() (gas: 5479)
+[PASS] test_FreezeBlocksTransfer() (gas: 177773)
+[PASS] test_MinterCanMint() (gas: 103595)
+[PASS] test_NonMinterCannotMint() (gas: 44441)
+[PASS] test_PauseBlocksTransfer() (gas: 174243)
+[PASS] test_UnfreezeRestoresTransfer() (gas: 237680)
+[PASS] test_UnpauseRestoresTransfer() (gas: 236207)
+Suite result: ok. 10 passed; 0 failed; 0 skipped; finished in 25.67ms (2.18ms CPU time)
+
+Ran 10 tests for test/unit/ReserveController.t.sol:ReserveControllerTest
+[PASS] test_AttestationCannotBeReused() (gas: 109177)
+[PASS] test_AttestorCanSetVerifiedReserve() (gas: 91510)
+[PASS] test_CanMintWithinVerifiedReserve() (gas: 233150)
+[PASS] test_CannotMintAboveReserve() (gas: 121190)
+[PASS] test_GovernanceCanChangeOperators() (gas: 90321)
+[PASS] test_InitialReserveIsZero() (gas: 32839)
+[PASS] test_MintRequestCannotBeReplayed() (gas: 233716)
+[PASS] test_NonAttestorCannotAttest() (gas: 35336)
+[PASS] test_NonOperatorCannotMint() (gas: 111493)
+[PASS] test_ReserveDeficitIsVisible() (gas: 292713)
+Suite result: ok. 10 passed; 0 failed; 0 skipped; finished in 26.28ms (3.20ms CPU time)
+
+Ran 1 test for test/attack/ReentrancyAttack.t.sol:ReentrancyAttackTest
+[PASS] test_ReentrantCallbackCannotDoubleProcessPayment() (gas: 429014)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 28.24ms (5.17ms CPU time)
+
+Ran 7 tests for test/unit/SettlementEngine.t.sol:SettlementEngineTest
+[PASS] test_CannotReuseBatchId() (gas: 249559)
+[PASS] test_CannotSettleSamePaymentTwice() (gas: 255397)
+[PASS] test_CannotSettleUnprocessedPayment() (gas: 55385)
+[PASS] test_CreateSettlementBatchSucceeds() (gas: 296733)
+[PASS] test_EmptyBatchReverts() (gas: 46585)
+[PASS] test_NonSettlementRoleCannotCreateBatch() (gas: 55254)
+[PASS] test_OversizedBatchReverts() (gas: 79749)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 30.71ms (628.86µs CPU time)
+
+Ran 12 tests for test/unit/PaymentProcessor.t.sol:PaymentProcessorTest
+[PASS] test_AnyRelayerCanSubmitOnPayersBehalf() (gas: 160331)
+[PASS] test_BatchSubmitTwoPayments() (gas: 231301)
+[PASS] test_EmptyBatchReverts() (gas: 38075)
+[PASS] test_ExpiredOrderReverts() (gas: 55175)
+[PASS] test_InactiveBankReverts() (gas: 112708)
+[PASS] test_OversizedBatchReverts() (gas: 146129)
+[PASS] test_PausedBlocksSubmitPayment() (gas: 110658)
+[PASS] test_ReplayingSamePaymentIdReverts() (gas: 188541)
+[PASS] test_ValidSignedPaymentSucceeds() (gas: 186904)
+[PASS] test_WrongNonceReverts() (gas: 59444)
+[PASS] test_WrongSignerReverts() (gas: 69394)
+[PASS] test_ZeroAmountReverts() (gas: 54431)
+Suite result: ok. 12 passed; 0 failed; 0 skipped; finished in 51.23ms (13.10ms CPU time)
+
+Ran 4 tests for test/attack/SignatureForgeryAttack.t.sol:SignatureForgeryAttackTest
+[PASS] test_AttackerCannotAuthorizePaymentFromVictim() (gas: 76590)
+[PASS] test_BatchSizeExactlyAtLimitSucceeds() (gas: 3102117)
+[PASS] test_MalformedSignatureReverts() (gas: 50219)
+[PASS] test_SignatureCannotBeReusedForDifferentOrder() (gas: 69015)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 18.51ms (17.26ms CPU time)
+
+Ran 4 tests for test/fuzz/PrivateUSD.fuzz.t.sol:PrivateUSDFuzzTest
+[PASS] testFuzz_CannotBurnMoreThanBalance(uint256,uint256) (runs: 256, μ: 127789, ~: 128341)
+[PASS] testFuzz_FrozenAccountCannotSendAnyAmount(uint256,uint256) (runs: 256, μ: 174397, ~: 174370)
+[PASS] testFuzz_MintAnyAmountToAnyAddress(address,uint256) (runs: 256, μ: 102422, ~: 102278)
+[PASS] testFuzz_TransferPreservesTotalSupply(address,address,uint256,uint256) (runs: 256, μ: 178826, ~: 179946)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 80.93ms (136.07ms CPU time)
+
+Ran 2 tests for test/integration/FullPaymentFlow.t.sol:FullPaymentFlowTest
+[PASS] test_FullPaymentAndSettlementLifecycle() (gas: 459384)
+[PASS] test_SecondPaymentFromSameBankUsesIncrementedNonce() (gas: 286042)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 83.34ms (7.40ms CPU time)
+
+Ran 4 tests for test/fuzz/PaymentProcessor.fuzz.t.sol:PaymentProcessorFuzzTest
+[PASS] testFuzz_AnyWrongNonceReverts(uint256) (runs: 256, μ: 62500, ~: 62464)
+[PASS] testFuzz_ExpiredOrderAlwaysReverts(uint256) (runs: 256, μ: 56043, ~: 56268)
+[PASS] testFuzz_ReplayNeverSucceedsTwice(uint256) (runs: 256, μ: 189128, ~: 189617)
+[PASS] testFuzz_ValidPaymentAnyAmountAnyId(uint256,bytes32) (runs: 256, μ: 170813, ~: 171257)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 84.87ms (181.02ms CPU time)
+
+Ran 1 test for test/invariant/PrivateUSDInvariant.t.sol:PrivateUSDInvariantTest
+[PASS]
+PrivateUSDInvariantTest invariants:
+[PASS] invariant_SupplyEqualsMintedMinusBurned
+[PASS] invariant_SupplyNeverExceedsTotalMinted
+ PrivateUSDInvariantTest invariants (runs: 128, calls: 6400, reverts: 0)
+
+╭-------------------+----------+-------+---------+----------╮
+| Contract          | Selector | Calls | Reverts | Discards |
++===========================================================+
+| PrivateUSDHandler | burn     | 2163  | 0       | 0        |
+|-------------------+----------+-------+---------+----------|
+| PrivateUSDHandler | mint     | 2108  | 0       | 0        |
+|-------------------+----------+-------+---------+----------|
+| PrivateUSDHandler | transfer | 2129  | 0       | 0        |
+╰-------------------+----------+-------+---------+----------╯
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 514.02ms (487.80ms CPU time)
+
+Ran 1 test for test/invariant/SettlementInvariant.t.sol:SettlementInvariantTest
+[PASS] invariant_NoPaymentEverSettledTwice() (runs: 128, calls: 6400, reverts: 0)
+
+╭-------------------+----------------+-------+---------+----------╮
+| Contract          | Selector       | Calls | Reverts | Discards |
++=================================================================+
+| SettlementHandler | processPayment | 3232  | 0       | 0        |
+|-------------------+----------------+-------+---------+----------|
+| SettlementHandler | trySettle      | 3168  | 0       | 0        |
+╰-------------------+----------------+-------+---------+----------╯
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 979.42ms (953.72ms CPU time)
+
+Ran 13 test suites in 1.01s (1.97s CPU time): 71 tests passed, 0 failed, 0 skipped (71 total tests)
+
+===== BACKEND =====
+======================================
+ BlockSikka safe test environment
+======================================
+
+[1/5] Recreating isolated test database...
+Fresh blocksikka_test created.
+
+[2/5] Building isolated test DATABASE_URL...
+Test database: blocksikka_test
+Test authentication: disabled
+
+[3/5] Applying database migrations...
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> e528a73157d3, create BlockSikka indexer tables
+INFO  [alembic.runtime.migration] Running upgrade e528a73157d3 -> 9f2d7c4a1b63, add fiat reserve treasury tables
+INFO  [alembic.runtime.migration] Running upgrade 9f2d7c4a1b63 -> d33615eaaae8, add redemption reserve recovery metadata
+INFO  [alembic.runtime.migration] Running upgrade d33615eaaae8 -> 2954af522db5, add mock bank ledger
+INFO  [alembic.runtime.migration] Running upgrade 2954af522db5 -> 23d325914914, add persistent mock bank ledger
+Database schema ready.
+
+[4/5] Initializing and synchronizing test reserve...
+Treasury reserve initialized
+currency=USD
+source=SIMULATED
+verified=0.000000
+reserved=0.000000
+Test reserve synchronized to on-chain value: 99974000000 micro-USD
+
+[5/5] Running tests...
+
+.......................................... [ 27%]
+.......................................... [ 54%]
+.......................................... [ 82%]
+...........................                [100%]
+================ warnings summary ================
+.venv/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /home/zohaib/sikka/backend/.venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+.venv/lib/python3.14/site-packages/starlette/testclient.py:53
+  /home/zohaib/sikka/backend/.venv/lib/python3.14/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+.venv/lib/python3.14/site-packages/websockets/legacy/__init__.py:6
+  /home/zohaib/sikka/backend/.venv/lib/python3.14/site-packages/websockets/legacy/__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+    warnings.warn(  # deprecated in 14.0 - 2024-11-09
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+153 passed, 3 warnings in 3.15s
+
+===== FRONTEND LINT =====
+
+> frontend@0.0.0 lint
+> eslint .
+
+
+===== FRONTEND TESTS =====
+
+> frontend@0.0.0 test
+> vitest run --run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.1 [39m[90m/home/zohaib/sikka/frontend[39m
+
+ [32m✓[39m src/api.public-demo.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 351[2mms[22m[39m
+   [32m✓[39m public demo API guard [2m(1)[22m
+     [33m[2m✓[22m[39m blocks writes before token access or fetch[33m 348[2mms[22m[39m
+ [32m✓[39m src/components/TreasuryOperationsDetail.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 144[2mms[22m[39m
+ [32m✓[39m src/components/TreasuryReconciliationHistory.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 304[2mms[22m[39m
+ [32m✓[39m src/payment.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m src/components/PaymentForm.test.tsx [2m([22m[2m1 test[22m[2m)[22m[33m 398[2mms[22m[39m
+   [32m✓[39m PaymentForm public demo [2m(1)[22m
+     [33m[2m✓[22m[39m disables payment controls in read-only mode[33m 395[2mms[22m[39m
+ [32m✓[39m src/components/PaymentTrace.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 85[2mms[22m[39m
+ [32m✓[39m src/components/TreasuryMovementsTable.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 98[2mms[22m[39m
+ [32m✓[39m src/components/TreasuryRequestInspector.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 389[2mms[22m[39m
+ [32m✓[39m src/components/TreasuryView.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 569[2mms[22m[39m
+   [32m✓[39m TreasuryView [2m(3)[22m
+     [33m[2m✓[22m[39m filters Treasury requests by status[33m 345[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m9 passed[39m[22m[90m (9)[39m
+[2m      Tests [22m [1m[32m17 passed[39m[22m[90m (17)[39m
+[2m   Start at [22m 17:17:43
+[2m   Duration [22m 8.05s[2m (environment 76%, setup 9%, transform 8%, tests 4%, import 3%)[22m
+
+
+===== FRONTEND BUILD =====
+
+> frontend@0.0.0 build
+> tsc -b && vite build
+
+vite v8.3.0 building client environment for production...
+transforming...
+✓ 187 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.50 kB │ gzip:   0.31 kB
+dist/assets/index-DL3DqeQk.css   27.92 kB │ gzip:   6.03 kB
+dist/assets/index-BEyh3Eco.js   537.08 kB │ gzip: 175.63 kB
+
+✓ built in 357ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+===== STACK STATUS AFTER TESTS =====
+======================================
+ BlockSikka status
+======================================
+
+===== QBFT =====
+Validators         4/4 healthy
+Block              152697
+Peers              0x3
+QBFT set           4 validators
+
+===== APPLICATION =====
+PostgreSQL         RUNNING
+FastAPI            HEALTHY
+Indexer            RUNNING  lag=0.0 caught_up=1.0 errors=179.0
+Frontend           RUNNING
+
+===== MONITORING =====
+Prometheus         true
+Grafana            true
+
+===== URLS =====
+Frontend           http://127.0.0.1:5173
+API                http://127.0.0.1:8000
+Indexer            http://127.0.0.1:9101/metrics
+Besu RPC           http://127.0.0.1:8545
+
+========================================
+ FINAL REGRESSION COMPLETE
+========================================

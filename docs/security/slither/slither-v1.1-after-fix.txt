@@ -1,0 +1,35 @@
+'forge clean' running (wd: /home/zohaib/sikka/contracts)
+'forge config --json' running
+'forge build --build-info --deny never --skip ./test/** ./script/** --force' running (wd: /home/zohaib/sikka/contracts)
+INFO:Detectors:
+Detector: arbitrary-send-erc20
+PaymentProcessor._processPayment(PaymentProcessor.PaymentOrder,bytes) (src/PaymentProcessor.sol#148-171) uses arbitrary from in transferFrom: require(bool,string)(privateUSD.transferFrom(order.from,order.to,order.amount),PAYMENT_TRANSFER_FAILED) (src/PaymentProcessor.sol#170)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#arbitrary-from-in-transferfrom
+INFO:Detectors:
+Detector: calls-loop
+PaymentProcessor._processPayment(PaymentProcessor.PaymentOrder,bytes) (src/PaymentProcessor.sol#148-171) has external calls inside a loop: ! bankRegistry.isActiveBank(order.from) (src/PaymentProcessor.sol#160)
+	Calls stack containing the loop:
+		PaymentProcessor.batchSubmitPayments(PaymentProcessor.PaymentOrder[],bytes[])
+PaymentProcessor._processPayment(PaymentProcessor.PaymentOrder,bytes) (src/PaymentProcessor.sol#148-171) has external calls inside a loop: ! bankRegistry.isActiveBank(order.to) (src/PaymentProcessor.sol#161)
+	Calls stack containing the loop:
+		PaymentProcessor.batchSubmitPayments(PaymentProcessor.PaymentOrder[],bytes[])
+PaymentProcessor._processPayment(PaymentProcessor.PaymentOrder,bytes) (src/PaymentProcessor.sol#148-171) has external calls inside a loop: require(bool,string)(privateUSD.transferFrom(order.from,order.to,order.amount),PAYMENT_TRANSFER_FAILED) (src/PaymentProcessor.sol#170)
+	Calls stack containing the loop:
+		PaymentProcessor.batchSubmitPayments(PaymentProcessor.PaymentOrder[],bytes[])
+SettlementEngine.createSettlementBatch(bytes32,bytes32[]) (src/SettlementEngine.sol#60-82) has external calls inside a loop: ! paymentProcessor.isProcessed(pid) (src/SettlementEngine.sol#73)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+INFO:Detectors:
+Detector: reentrancy-events
+Reentrancy in ReserveController.mintAgainstReserve(address,uint256,bytes32) (src/ReserveController.sol#132-165):
+	External calls:
+	- privateUSD.mint(recipient,amount) (src/ReserveController.sol#162)
+	Event emitted after the call(s):
+	- ReserveBackedMint(mintRequestId,recipient,amount,resultingSupply) (src/ReserveController.sol#164)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-4
+INFO:Detectors:
+Detector: timestamp
+PaymentProcessor._processPayment(PaymentProcessor.PaymentOrder,bytes) (src/PaymentProcessor.sol#148-171) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > order.expiry (src/PaymentProcessor.sol#150)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+INFO:Slither:. analyzed (40 contracts with 102 detectors), 7 result(s) found
