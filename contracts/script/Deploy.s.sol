@@ -19,6 +19,9 @@ contract Deploy is Script {
     // Default: the well-known, publicly-documented Anvil/Foundry test
     // account #0 private key, prefunded in our genesis.json (Phase 3).
     // NEVER use this key for anything beyond this local learning network.
+    // PUBLIC LOCAL-DEVELOPMENT KEY ONLY.
+    // This is a known deterministic test account and MUST NOT be used
+    // on public networks or with real funds.
     uint256 constant DEFAULT_DEV_KEY = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
 
     function run() external {
